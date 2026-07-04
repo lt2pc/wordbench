@@ -1669,9 +1669,37 @@ function confirmJsonImport(){
 }
 
 /* ---------------- MODE GATE (student vs teacher) ---------------- */
+const MODE_STORAGE_KEY = 'wordbench_mode_session_v1';
+const MODE_SESSION_HOURS = 8; // how long a login stays valid across refreshes
+
 let currentMode = null; // 'student' | 'teacher'
 
 function isTeacherMode(){ return currentMode === 'teacher'; }
+
+function saveModeSession(mode){
+  const expires = Date.now() + MODE_SESSION_HOURS * 60 * 60 * 1000;
+  localStorage.setItem(MODE_STORAGE_KEY, JSON.stringify({ mode, expires }));
+}
+
+function loadModeSession(){
+  try{
+    const raw = localStorage.getItem(MODE_STORAGE_KEY);
+    if(!raw) return null;
+    const data = JSON.parse(raw);
+    if(!data || !data.mode || !data.expires) return null;
+    if(Date.now() > data.expires){
+      localStorage.removeItem(MODE_STORAGE_KEY);
+      return null;
+    }
+    return data.mode;
+  }catch(e){
+    return null;
+  }
+}
+
+function clearModeSession(){
+  localStorage.removeItem(MODE_STORAGE_KEY);
+}
 
 function showTeacherLogin(){
   document.getElementById('teacher-login-box').style.display = 'block';
@@ -1689,15 +1717,18 @@ function attemptTeacherLogin(){
 
 function enterAsStudent(){
   currentMode = 'student';
+  saveModeSession('student');
   finishEnteringApp();
 }
 function enterAsTeacher(){
   currentMode = 'teacher';
+  saveModeSession('teacher');
   finishEnteringApp();
 }
 
 function switchMode(){
   currentMode = null;
+  clearModeSession();
   document.getElementById('mode-gate').classList.add('open');
   document.getElementById('app-shell').style.display = 'none';
   document.getElementById('teacher-login-box').style.display = 'none';
@@ -1721,6 +1752,18 @@ connectToCloud(function(){
   renderFlash('pv');
   renderFlash('vc');
 });
+
+// Restore a previous login/mode if it hasn't expired yet, so refreshing the page
+// doesn't force the person to choose student/teacher and re-enter the password again.
+(function restoreModeSession(){
+  const savedMode = loadModeSession();
+  if(savedMode === 'teacher'){
+    enterAsTeacher();
+  } else if(savedMode === 'student'){
+    enterAsStudent();
+  }
+  // otherwise leave the mode gate showing
+})();
 </script>
 </body>
 </html>
