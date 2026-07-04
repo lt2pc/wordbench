@@ -25,18 +25,18 @@
   }
 
   [data-theme="dark"]{
-    --ink:#F2EDE0;
-    --ink-soft:#B8BFC9;
-    --paper:#161B24;
-    --paper-dim:#1F2631;
-    --marigold:#F0B354;
-    --marigold-deep:#F0B354;
-    --sage:#8FB39B;
-    --sage-deep:#8FB39B;
-    --clay:#D97E68;
-    --clay-deep:#D97E68;
-    --line:rgba(242,237,224,0.14);
-    --shadow: 0 8px 24px rgba(0,0,0,0.35);
+    --ink:#F4EDE4;
+    --ink-soft:#A79FB8;
+    --paper:#15111F;
+    --paper-dim:#1E1830;
+    --marigold:#F2A65A;
+    --marigold-deep:#F2A65A;
+    --sage:#7FCBA4;
+    --sage-deep:#7FCBA4;
+    --clay:#E8836B;
+    --clay-deep:#E8836B;
+    --line:rgba(244,237,228,0.12);
+    --shadow: 0 12px 32px rgba(0,0,0,0.5);
   }
 
   body, .modal, .flip-card .face, .quiz-question, .quiz-opt, .deck-select, input[type="text"], select.form-select, textarea{
@@ -76,6 +76,22 @@
   .toast.show{
     opacity:1;
     transform:translateX(-50%) translateY(0);
+  }
+
+  .theme-curtain{
+    position:fixed;
+    inset:0;
+    z-index:9999;
+    pointer-events:none;
+    clip-path: polygon(-10% -10%, -10% -10%, -10% -10%, -10% -10%);
+  }
+  .theme-curtain.sweeping{
+    clip-path: polygon(-10% -10%, 130% -10%, 130% 130%, -10% 130%);
+    transition: clip-path 0.6s cubic-bezier(.65,0,.35,1);
+  }
+  .theme-curtain.receding{
+    clip-path: polygon(130% -10%, 130% -10%, 130% 130%, 130% 130%);
+    transition: clip-path 0.6s cubic-bezier(.65,0,.35,1);
   }
 
   .skip-link{
@@ -433,7 +449,7 @@
   /* ---------- TEACHER PANEL (MODAL) ---------- */
   .modal-overlay{
     position:fixed; inset:0;
-    background:rgba(27,36,48,0.55);
+    background:rgba(15,10,25,0.6);
     display:flex;
     align-items:flex-start;
     justify-content:center;
@@ -441,13 +457,12 @@
     padding:40px 20px;
     overflow-y:auto;
     opacity:0;
-    visibility:hidden;
-    transition: opacity 0.25s ease, visibility 0s linear 0.25s;
+    pointer-events:none;
+    transition: opacity 0.3s ease;
   }
   .modal-overlay.open{
     opacity:1;
-    visibility:visible;
-    transition: opacity 0.25s ease, visibility 0s linear 0s;
+    pointer-events:auto;
   }
   .modal-row{
     display:flex;
@@ -711,6 +726,7 @@
 <a class="skip-link" href="#main">Skip to content</a>
 
 <div class="toast" id="global-toast"></div>
+<div class="theme-curtain" id="theme-curtain"></div>
 
 <!-- MODE GATE: shown before anything else -->
 <div class="modal-overlay open" id="mode-gate" style="background:var(--paper); align-items:center;">
@@ -2015,6 +2031,10 @@ function finishEnteringApp(){
 
 /* ---------------- DARK MODE ---------------- */
 const THEME_STORAGE_KEY = 'wordbench_theme_v1';
+const THEME_CURTAIN_COLORS = {
+  dark:  '#15111F',
+  light: '#FAF6ED'
+};
 
 function applyTheme(theme){
   document.documentElement.setAttribute('data-theme', theme);
@@ -2026,7 +2046,28 @@ function toggleTheme(){
   const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
   const next = current === 'dark' ? 'light' : 'dark';
   localStorage.setItem(THEME_STORAGE_KEY, next);
-  applyTheme(next);
+  sweepToTheme(next);
+}
+
+// Sweeps a diagonal curtain of the incoming theme's color across the screen,
+// swaps the actual theme underneath it mid-sweep, then fades the curtain away
+// to reveal the new theme already in place.
+function sweepToTheme(next){
+  const curtain = document.getElementById('theme-curtain');
+  curtain.style.background = THEME_CURTAIN_COLORS[next];
+  curtain.classList.remove('sweeping', 'receding');
+  void curtain.offsetWidth; // force reflow so the animation restarts cleanly
+
+  curtain.classList.add('sweeping');
+
+  setTimeout(()=>{
+    applyTheme(next); // swap the real theme once curtain fully covers the screen
+    curtain.classList.remove('sweeping');
+    curtain.classList.add('receding');
+    setTimeout(()=>{
+      curtain.classList.remove('receding');
+    }, 650);
+  }, 600);
 }
 
 function initTheme(){
