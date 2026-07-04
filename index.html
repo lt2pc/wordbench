@@ -489,17 +489,39 @@
   .tp-pane.active{ display:block; }
 
   .deck-list-item{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
     padding:10px 14px;
     border:1.5px solid var(--line);
     border-radius:10px;
     margin-bottom:8px;
   }
+  .deck-list-item-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px;
+  }
   .deck-list-item .name{ font-weight:600; }
   .deck-list-item .meta{ font-size:0.78rem; color:var(--ink-soft); font-family:'JetBrains Mono', monospace; }
-  .deck-list-actions{ display:flex; gap:6px; }
+  .deck-list-actions{ display:flex; gap:6px; flex-wrap:wrap; }
+  .word-list{
+    margin-top:12px;
+    padding-top:12px;
+    border-top:1px solid var(--line);
+    max-height:220px;
+    overflow-y:auto;
+  }
+  .word-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:6px 0;
+    font-size:0.85rem;
+  }
+  .word-row-label{ font-weight:600; }
+  .word-row-meaning{ font-weight:400; color:var(--ink-soft); }
+  .word-row-empty{ font-size:0.82rem; color:var(--ink-soft); opacity:0.7; padding:6px 0; }
   .icon-btn{
     background:none;
     border:1.5px solid var(--line);
@@ -672,7 +694,7 @@
     <!-- ADD WORD FORM -->
     <div class="tp-pane" id="tp-pane-add">
       <div class="field-label" style="margin-top:0;">Add to deck</div>
-      <select class="form-select" id="add-target-deck"></select>
+      <select class="form-select" id="add-target-deck" onchange="tpAddTargetDeck[currentTpSection()] = this.value"></select>
 
       <div id="pv-fields">
         <div class="field-row2">
@@ -714,7 +736,7 @@
     <!-- IMPORT / EXPORT -->
     <div class="tp-pane" id="tp-pane-import">
       <div class="field-label" style="margin-top:0;">Import into deck</div>
-      <select class="form-select" id="import-target-deck"></select>
+      <select class="form-select" id="import-target-deck" onchange="tpImportTargetDeck[currentTpSection()] = this.value"></select>
 
       <div class="field-label">Upload a CSV file</div>
       <div class="file-drop">
@@ -1130,6 +1152,8 @@ function slugId(){
 
 /* ---------------- TEACHER PANEL ---------------- */
 let tpCurrentTab = 'decks';
+let tpAddTargetDeck = {};    // { pv: deckId, vc: deckId } - remembers selection across re-renders
+let tpImportTargetDeck = {};
 
 function openTeacherPanel(){
   document.getElementById('teacher-modal').classList.add('open');
@@ -1181,34 +1205,90 @@ function renderTeacherPanel(){
 function populateDeckDropdown(selectId, section){
   const sel = document.getElementById(selectId);
   const s = deckStore[section];
-  const prevValue = sel.value;
+  const trackerMap = selectId === 'add-target-deck' ? tpAddTargetDeck : tpImportTargetDeck;
+  const desired = trackerMap[section];
   sel.innerHTML = Object.keys(s.decks).map(id =>
     `<option value="${id}">${escapeHtml(s.decks[id].name)}</option>`
   ).join('');
-  if(Object.keys(s.decks).includes(prevValue)) sel.value = prevValue;
-  else sel.value = s.activeDeckId;
+  if(desired && Object.keys(s.decks).includes(desired)){
+    sel.value = desired;
+  } else {
+    sel.value = s.activeDeckId;
+    trackerMap[section] = s.activeDeckId;
+  }
 }
 
 function renderDeckList(section){
   const s = deckStore[section];
   const list = document.getElementById('deck-list');
-  list.innerHTML = Object.keys(s.decks).map(id => {
+  const deckIds = Object.keys(s.decks);
+  list.innerHTML = deckIds.map(id => {
     const deck = s.decks[id];
     const isActive = id === s.activeDeckId;
-    const canDelete = id !== 'default';
+    const canDelete = true;
+    const wordsHtml = deck.words.map((w, i) => {
+      const label = section === 'pv' ? `${w.verb} ${w.particle}` : w.word;
+      return `<div class="word-row">
+        <span class="word-row-label">${escapeHtml(label)} <span class="word-row-meaning">— ${escapeHtml(w.meaning)}</span></span>
+        <button class="icon-btn danger" onclick="deleteWord('${section}','${id}',${i})">Remove</button>
+      </div>`;
+    }).join('') || `<div class="word-row-empty">No words in this deck yet.</div>`;
+
     return `
-      <div class="deck-list-item">
-        <div>
-          <div class="name">${escapeHtml(deck.name)} ${isActive ? '<span style="color:var(--sage-deep); font-size:0.75rem;">● active</span>' : ''}</div>
-          <div class="meta">${deck.words.length} card${deck.words.length===1?'':'s'}</div>
+      <div class="deck-list-item deck-list-item-block">
+        <div class="deck-list-item-head">
+          <div>
+            <div class="name">${escapeHtml(deck.name)} ${isActive ? '<span style="color:var(--sage-deep); font-size:0.75rem;">● active</span>' : ''}</div>
+            <div class="meta">${deck.words.length} card${deck.words.length===1?'':'s'}</div>
+          </div>
+          <div class="deck-list-actions">
+            ${!isActive ? `<button class="icon-btn" onclick="activateDeckFromPanel('${section}','${id}')">Use</button>` : ''}
+            <button class="icon-btn" onclick="renameDeck('${section}','${id}')">Rename</button>
+            <button class="icon-btn" onclick="exportDeck('${section}','${id}')">Export</button>
+            ${canDelete ? `<button class="icon-btn danger" onclick="deleteDeck('${section}','${id}')">Delete</button>` : ''}
+            <button class="icon-btn" onclick="toggleWordList('${section}-${id}')">Words ▾</button>
+          </div>
         </div>
-        <div class="deck-list-actions">
-          ${!isActive ? `<button class="icon-btn" onclick="activateDeckFromPanel('${section}','${id}')">Use</button>` : ''}
-          <button class="icon-btn" onclick="exportDeck('${section}','${id}')">Export</button>
-          ${canDelete ? `<button class="icon-btn danger" onclick="deleteDeck('${section}','${id}')">Delete</button>` : ''}
-        </div>
+        <div class="word-list" id="wordlist-${section}-${id}" style="display:none;">${wordsHtml}</div>
       </div>`;
   }).join('');
+}
+
+function toggleWordList(key){
+  const el = document.getElementById('wordlist-'+key);
+  if(!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function deleteWord(section, deckId, wordIndex){
+  const s = deckStore[section];
+  const deck = s.decks[deckId];
+  if(!deck || !deck.words[wordIndex]) return;
+  const label = section === 'pv' ? `${deck.words[wordIndex].verb} ${deck.words[wordIndex].particle}` : deck.words[wordIndex].word;
+  if(!confirm(`Remove "${label}" from "${deck.name}"?`)) return;
+  deck.words.splice(wordIndex, 1);
+  saveDeckStore();
+  renderDeckList(section);
+  refreshDeckSelect(section);
+  if(deckStore[section].activeDeckId === deckId){
+    resetStudyState(section);
+    if(state[section].mode === 'flash') renderFlash(section); else renderQuiz(section);
+  }
+}
+
+function renameDeck(section, deckId){
+  const s = deckStore[section];
+  const current = s.decks[deckId].name;
+  const newName = prompt('Rename deck:', current);
+  if(newName === null) return; // cancelled
+  const trimmed = newName.trim();
+  if(!trimmed) return;
+  s.decks[deckId].name = trimmed;
+  saveDeckStore();
+  renderDeckList(section);
+  populateDeckDropdown('add-target-deck', section);
+  populateDeckDropdown('import-target-deck', section);
+  refreshDeckSelect(section);
 }
 
 function activateDeckFromPanel(section, deckId){
@@ -1229,6 +1309,8 @@ function createDeck(){
   deckStore[section].decks[id] = { name, words: [] };
   saveDeckStore();
   nameInput.value = '';
+  tpAddTargetDeck[section] = id;
+  tpImportTargetDeck[section] = id;
   renderDeckList(section);
   populateDeckDropdown('add-target-deck', section);
   populateDeckDropdown('import-target-deck', section);
@@ -1237,13 +1319,23 @@ function createDeck(){
 
 function deleteDeck(section, deckId){
   const s = deckStore[section];
-  if(deckId === 'default') return;
+  const deckIds = Object.keys(s.decks);
   if(!confirm(`Delete deck "${s.decks[deckId].name}"? This can't be undone unless you exported it.`)) return;
   delete s.decks[deckId];
-  if(s.activeDeckId === deckId){
-    s.activeDeckId = 'default';
-    resetStudyState(section);
+
+  // if that was the last deck, create a fresh empty one so the app always has something to show
+  if(Object.keys(s.decks).length === 0){
+    const newId = slugId();
+    s.decks[newId] = { name:'New deck', words:[] };
+    s.activeDeckId = newId;
+  } else if(s.activeDeckId === deckId){
+    s.activeDeckId = Object.keys(s.decks)[0];
   }
+  resetStudyState(section);
+
+  if(tpAddTargetDeck[section] === deckId) tpAddTargetDeck[section] = s.activeDeckId;
+  if(tpImportTargetDeck[section] === deckId) tpImportTargetDeck[section] = s.activeDeckId;
+
   saveDeckStore();
   renderDeckList(section);
   populateDeckDropdown('add-target-deck', section);
