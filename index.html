@@ -878,13 +878,22 @@ function loadLocalFallback(){
   return defaultDeckStore();
 }
 
-// Saves deck changes. Teachers push to Firestore (synced to everyone);
-// if the cloud isn't reachable, falls back to local-only storage.
-function saveDeckStore(){
+// Saves deck changes. Teachers push only the affected section to Firestore
+// (field-level update) to avoid overwriting the other section's concurrent changes.
+function saveDeckStore(changedSection){
   localStorage.setItem(LOCAL_FALLBACK_KEY, JSON.stringify(deckStore));
   if(firebaseReady && db && isTeacherMode()){
     const ref = db.collection(FIRESTORE_DOC_PATH.collection).doc(FIRESTORE_DOC_PATH.doc);
-    ref.set({ store: deckStore }).catch((err)=>{
+    const update = {};
+    if(changedSection === 'pv' || !changedSection){
+      update['store.pv'] = deckStore.pv;
+    }
+    if(changedSection === 'vc' || !changedSection){
+      update['store.vc'] = deckStore.vc;
+    }
+    ref.set({}, {merge:true}).then(()=>{
+      return ref.update(update);
+    }).catch((err)=>{
       console.error('Failed to save to cloud:', err);
       setSyncBanner('Could not save to the shared database — this change is only saved on this device.', true);
     });
@@ -964,7 +973,7 @@ function refreshDeckSelect(section){
 
 function switchDeck(section, deckId){
   deckStore[section].activeDeckId = deckId;
-  saveDeckStore();
+  saveDeckStore(section);
   resetStudyState(section);
   refreshDeckSelect(section);
   if(state[section].mode === 'flash') renderFlash(section);
@@ -1267,7 +1276,7 @@ function deleteWord(section, deckId, wordIndex){
   const label = section === 'pv' ? `${deck.words[wordIndex].verb} ${deck.words[wordIndex].particle}` : deck.words[wordIndex].word;
   if(!confirm(`Remove "${label}" from "${deck.name}"?`)) return;
   deck.words.splice(wordIndex, 1);
-  saveDeckStore();
+  saveDeckStore(section);
   renderDeckList(section);
   refreshDeckSelect(section);
   if(deckStore[section].activeDeckId === deckId){
@@ -1284,7 +1293,7 @@ function renameDeck(section, deckId){
   const trimmed = newName.trim();
   if(!trimmed) return;
   s.decks[deckId].name = trimmed;
-  saveDeckStore();
+  saveDeckStore(section);
   renderDeckList(section);
   populateDeckDropdown('add-target-deck', section);
   populateDeckDropdown('import-target-deck', section);
@@ -1307,7 +1316,7 @@ function createDeck(){
   }
   const id = slugId();
   deckStore[section].decks[id] = { name, words: [] };
-  saveDeckStore();
+  saveDeckStore(section);
   nameInput.value = '';
   tpAddTargetDeck[section] = id;
   tpImportTargetDeck[section] = id;
@@ -1336,7 +1345,7 @@ function deleteDeck(section, deckId){
   if(tpAddTargetDeck[section] === deckId) tpAddTargetDeck[section] = s.activeDeckId;
   if(tpImportTargetDeck[section] === deckId) tpImportTargetDeck[section] = s.activeDeckId;
 
-  saveDeckStore();
+  saveDeckStore(section);
   renderDeckList(section);
   populateDeckDropdown('add-target-deck', section);
   populateDeckDropdown('import-target-deck', section);
@@ -1401,7 +1410,7 @@ function addWordFromForm(){
   }
 
   deckStore[section].decks[targetDeckId].words.push(entry);
-  saveDeckStore();
+  saveDeckStore(section);
 
   // clear form
   ['f-verb','f-particle','f-word','f-pos','f-meaning','f-example'].forEach(id=>{
@@ -1472,7 +1481,7 @@ function handleCsvUpload(evt){
         }
       }
 
-      saveDeckStore();
+      saveDeckStore(section);
       renderDeckList(section);
       refreshDeckSelect(section);
       if(deckStore[section].activeDeckId === targetDeckId){
@@ -1513,7 +1522,7 @@ function handleJsonUpload(evt){
         return;
       }
       deckStore[section].decks[targetDeckId].words.push(...payload.words);
-      saveDeckStore();
+      saveDeckStore(section);
       renderDeckList(section);
       refreshDeckSelect(section);
       if(deckStore[section].activeDeckId === targetDeckId){
