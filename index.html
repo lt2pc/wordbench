@@ -23,7 +23,7 @@
     --line:rgba(27,36,48,0.12);
     --shadow: 0 8px 24px rgba(27,36,48,0.10);
   }
-
+ 
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
   body{
@@ -33,15 +33,15 @@
     font-family:'Inter', sans-serif;
     -webkit-font-smoothing:antialiased;
   }
-
+ 
   ::selection{ background:var(--marigold); color:var(--ink); }
-
+ 
   .skip-link{
     position:absolute; left:-999px; top:0;
     background:var(--ink); color:var(--paper); padding:10px 16px; z-index:100;
   }
   .skip-link:focus{ left:8px; top:8px; }
-
+ 
   header.top{
     padding:28px 24px 20px;
     max-width:1000px;
@@ -77,7 +77,7 @@
     cursor:pointer;
   }
   .teacher-link:hover{ border-color:var(--ink); color:var(--ink); }
-
+ 
   nav.sections{
     max-width:1000px;
     margin:0 auto;
@@ -101,17 +101,17 @@
   .tab:hover{ border-color: var(--ink); color:var(--ink); }
   .tab[aria-selected="true"].pv{ background:var(--marigold); border-color:var(--marigold-deep); color:var(--ink); }
   .tab[aria-selected="true"].vc{ background:var(--clay); border-color:var(--clay-deep); color:var(--paper); }
-
+ 
   main{
     max-width:1000px;
     margin:0 auto;
     padding:28px 24px 80px;
   }
-
+ 
   .section{ display:none; }
   .section.active{ display:block; animation: fadeIn 0.25s ease; }
   @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
-
+ 
   .deck-row{
     display:flex;
     align-items:center;
@@ -136,7 +136,7 @@
     color:var(--ink-soft);
     opacity:0.7;
   }
-
+ 
   .mode-row{
     display:flex;
     align-items:center;
@@ -164,13 +164,13 @@
     cursor:pointer;
   }
   .mode-btn.active{ background:var(--ink); color:var(--paper); }
-
+ 
   .progress-tag{
     font-family:'JetBrains Mono', monospace;
     font-size:0.8rem;
     color:var(--ink-soft);
   }
-
+ 
   .empty-state{
     text-align:center;
     padding:60px 20px;
@@ -185,7 +185,7 @@
     color:var(--ink);
     margin-bottom:8px;
   }
-
+ 
   /* ---------- FLASHCARD ---------- */
   .card-stage{
     display:flex;
@@ -224,7 +224,7 @@
   .face.back{ transform: rotateY(180deg); }
   #pv-panel .face.back{ background:var(--ink); color:var(--paper); }
   #vc-panel .face.back{ background:var(--clay); color:var(--paper); }
-
+ 
   .combo{
     display:flex;
     align-items:center;
@@ -245,7 +245,7 @@
     border-bottom:3px solid var(--marigold);
   }
   .flip-card.flipped .combo{ transform: scale(0.001); transition: transform 0.01s; }
-
+ 
   .headword{
     font-family:'Fraunces', serif;
     font-weight:600;
@@ -267,7 +267,7 @@
     color:var(--ink-soft);
     opacity:0.6;
   }
-
+ 
   .meaning{
     font-size:1.3rem;
     font-weight:600;
@@ -280,7 +280,7 @@
     font-style:italic;
     line-height:1.5;
   }
-
+ 
   .card-controls{
     display:flex;
     gap:12px;
@@ -309,7 +309,7 @@
     outline:3px solid var(--marigold-deep);
     outline-offset:2px;
   }
-
+ 
   /* ---------- QUIZ ---------- */
   .quiz-wrap{ max-width:600px; margin:0 auto; }
   .quiz-question{
@@ -354,7 +354,7 @@
   .quiz-opt.correct{ background:var(--sage); border-color:var(--sage-deep); color:#fff; }
   .quiz-opt.incorrect{ background:var(--clay); border-color:var(--clay-deep); color:#fff; }
   .quiz-opt[disabled]{ cursor:default; }
-
+ 
   .quiz-footer{
     display:flex;
     justify-content:space-between;
@@ -366,7 +366,7 @@
     font-size:0.85rem;
     color:var(--ink-soft);
   }
-
+ 
   .quiz-done{
     text-align:center;
     padding:50px 20px;
@@ -377,7 +377,7 @@
     font-size:2.6rem;
     color:var(--marigold-deep);
   }
-
+ 
   footer{
     max-width:1000px;
     margin:0 auto;
@@ -387,7 +387,7 @@
     color:var(--ink-soft);
     opacity:0.6;
   }
-
+ 
   /* ---------- TEACHER PANEL (MODAL) ---------- */
   .modal-overlay{
     position:fixed; inset:0;
@@ -431,7 +431,7 @@
     opacity:0.75;
     margin-bottom:24px;
   }
-
+ 
   .field-label{
     font-family:'Inter', sans-serif;
     font-weight:600;
@@ -465,7 +465,7 @@
     grid-template-columns:1fr 1fr;
     gap:12px;
   }
-
+ 
   .tp-tabs{
     display:flex;
     gap:8px;
@@ -487,7 +487,7 @@
   .tp-tab.active{ color:var(--ink); border-bottom-color:var(--marigold-deep); }
   .tp-pane{ display:none; }
   .tp-pane.active{ display:block; }
-
+ 
   .deck-list-item{
     display:flex;
     align-items:center;
@@ -511,7 +511,7 @@
   }
   .icon-btn:hover{ border-color:var(--ink); color:var(--ink); }
   .icon-btn.danger:hover{ border-color:var(--clay-deep); color:var(--clay-deep); }
-
+ 
   .file-drop{
     border:1.5px dashed var(--line);
     border-radius:12px;
@@ -520,7 +520,7 @@
     color:var(--ink-soft);
     font-size:0.88rem;
   }
-
+ 
   .status-msg{
     font-size:0.85rem;
     padding:10px 14px;
@@ -531,18 +531,18 @@
   .status-msg.show{ display:block; }
   .status-msg.ok{ background:rgba(124,152,133,0.18); color:var(--sage-deep); }
   .status-msg.err{ background:rgba(196,99,79,0.15); color:var(--clay-deep); }
-
+ 
   .modal-actions{
     display:flex;
     gap:10px;
     margin-top:22px;
     flex-wrap:wrap;
   }
-
+ 
   @media (prefers-reduced-motion: reduce){
     *{ animation:none !important; transition:none !important; }
   }
-
+ 
   @media (max-width:600px){
     .combo{ font-size:1.5rem; }
     .headword{ font-size:1.7rem; }
@@ -554,7 +554,7 @@
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
-
+ 
 <!-- MODE GATE: shown before anything else -->
 <div class="modal-overlay open" id="mode-gate" style="background:var(--paper); align-items:center;">
   <div class="modal" style="max-width:420px; text-align:center;">
@@ -574,7 +574,7 @@
     </div>
   </div>
 </div>
-
+ 
 <div id="app-shell" style="display:none;">
 <header class="top">
   <div>
@@ -588,14 +588,14 @@
   </div>
 </header>
 <div id="sync-banner" class="deck-count" style="max-width:1000px; margin:0 auto; padding:0 24px 12px; opacity:0.7;"></div>
-
+ 
 <nav class="sections" role="tablist" aria-label="Choose a section">
   <button class="tab pv" role="tab" aria-selected="true" id="tab-pv" onclick="showSection('pv')">Phrasal verbs</button>
   <button class="tab vc" role="tab" aria-selected="false" id="tab-vc" onclick="showSection('vc')">Vocabulary</button>
 </nav>
-
+ 
 <main id="main">
-
+ 
   <!-- PHRASAL VERBS SECTION -->
   <section class="section active" id="pv-panel" aria-labelledby="tab-pv">
     <div class="deck-row">
@@ -609,11 +609,11 @@
       </div>
       <div class="progress-tag" id="pv-progress">card 1 of —</div>
     </div>
-
+ 
     <div id="pv-flash-area" class="card-stage"></div>
     <div id="pv-quiz-area" class="quiz-wrap" style="display:none;"></div>
   </section>
-
+ 
   <!-- VOCAB SECTION -->
   <section class="section" id="vc-panel" aria-labelledby="tab-vc">
     <div class="deck-row">
@@ -627,16 +627,16 @@
       </div>
       <div class="progress-tag" id="vc-progress">card 1 of —</div>
     </div>
-
+ 
     <div id="vc-flash-area" class="card-stage"></div>
     <div id="vc-quiz-area" class="quiz-wrap" style="display:none;"></div>
   </section>
-
+ 
 </main>
-
+ 
 <footer>wordbench — built for classroom practice. use "Teacher tools" to create and manage your own word decks.</footer>
 </div> <!-- end app-shell -->
-
+ 
 <!-- TEACHER MODAL -->
 <div class="modal-overlay" id="teacher-modal">
   <div class="modal">
@@ -645,19 +645,19 @@
       <button class="modal-close" onclick="closeTeacherPanel()" aria-label="Close">&times;</button>
     </div>
     <div class="modal-sub">create decks, add words, and back them up as files</div>
-
+ 
     <div class="field-label">Editing section</div>
     <select class="form-select" id="tp-section-select" onchange="renderTeacherPanel()">
       <option value="pv">Phrasal verbs</option>
       <option value="vc">Vocabulary</option>
     </select>
-
+ 
     <div class="tp-tabs">
       <button class="tp-tab active" id="tp-tab-decks" onclick="setTpTab('decks')">My decks</button>
       <button class="tp-tab" id="tp-tab-add" onclick="setTpTab('add')">Add a word</button>
       <button class="tp-tab" id="tp-tab-import" onclick="setTpTab('import')">Import file</button>
     </div>
-
+ 
     <!-- DECKS LIST -->
     <div class="tp-pane active" id="tp-pane-decks">
       <div class="field-label" style="margin-top:0;">New deck name</div>
@@ -668,12 +668,12 @@
       <div class="field-label">Existing decks</div>
       <div id="deck-list"></div>
     </div>
-
+ 
     <!-- ADD WORD FORM -->
     <div class="tp-pane" id="tp-pane-add">
       <div class="field-label" style="margin-top:0;">Add to deck</div>
       <select class="form-select" id="add-target-deck"></select>
-
+ 
       <div id="pv-fields">
         <div class="field-row2">
           <div>
@@ -698,42 +698,42 @@
           </div>
         </div>
       </div>
-
+ 
       <div class="field-label">Meaning</div>
       <input type="text" id="f-meaning" placeholder="Simple definition students will understand">
-
+ 
       <div class="field-label">Example sentence</div>
       <input type="text" id="f-example" placeholder="A sentence using it naturally">
-
+ 
       <div class="modal-actions">
         <button class="ctrl-btn primary" onclick="addWordFromForm()">Add word</button>
       </div>
       <div class="status-msg" id="add-status"></div>
     </div>
-
+ 
     <!-- IMPORT / EXPORT -->
     <div class="tp-pane" id="tp-pane-import">
       <div class="field-label" style="margin-top:0;">Import into deck</div>
       <select class="form-select" id="import-target-deck"></select>
-
+ 
       <div class="field-label">Upload a CSV file</div>
       <div class="file-drop">
         <input type="file" id="csv-file-input" accept=".csv,.txt" onchange="handleCsvUpload(event)">
         <div class="field-hint" id="csv-format-hint" style="margin-top:10px;"></div>
       </div>
-
+ 
       <div class="field-label">Or upload a Wordbench deck file (.json)</div>
       <div class="file-drop">
         <input type="file" id="json-file-input" accept=".json" onchange="handleJsonUpload(event)">
         <div class="field-hint">Adds all words from a previously exported deck file into the selected deck above</div>
       </div>
-
+ 
       <div class="status-msg" id="import-status"></div>
     </div>
-
+ 
   </div>
 </div>
-
+ 
 <script>
 /* ---------------- DEFAULT DATA ---------------- */
 const defaultPhrasalVerbs = [
@@ -750,7 +750,7 @@ const defaultPhrasalVerbs = [
   { verb:"take", particle:"after", meaning:"to resemble a parent or relative", example:"She takes after her mother — same laugh, same humor." },
   { verb:"call", particle:"off", meaning:"to cancel something planned", example:"They called off the picnic because of the storm." },
 ];
-
+ 
 const defaultVocabulary = [
   { word:"meticulous", pos:"adj.", meaning:"very careful and precise about details", example:"The editor was meticulous, catching every small typo." },
   { word:"ambiguous", pos:"adj.", meaning:"having more than one possible meaning; unclear", example:"His answer was ambiguous, so nobody knew what he meant." },
@@ -765,7 +765,7 @@ const defaultVocabulary = [
   { word:"skeptical", pos:"adj.", meaning:"having doubts; not easily convinced", example:"She stayed skeptical about the surprising claim." },
   { word:"versatile", pos:"adj.", meaning:"able to adapt to many different functions or situations", example:"A versatile employee can handle several different roles." },
 ];
-
+ 
 /* ---------------- FIREBASE CONFIG ----------------
    Replace the values below with your own Firebase project's config.
    (Teacher tools > see setup instructions from Claude for how to get these.)
@@ -778,15 +778,15 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "655143857353",
   appId: "1:655143857353:web:f696c61f0219016b7e7118"
 };
-
+ 
 // Set your own teacher password here
 const TEACHER_PASSWORD = "teacher123";
-
+ 
 const FIRESTORE_DOC_PATH = { collection: "wordbench", doc: "decks" };
-
+ 
 let db = null;
 let firebaseReady = false;
-
+ 
 function initFirebase(){
   try{
     firebase.initializeApp(FIREBASE_CONFIG);
@@ -797,27 +797,27 @@ function initFirebase(){
     firebaseReady = false;
   }
 }
-
+ 
 /* ---------------- DECK STORAGE (Firestore-backed, localStorage fallback) ---------------- */
 const LOCAL_FALLBACK_KEY = 'wordbench_decks_local_fallback_v1';
-
+ 
 function defaultDeckStore(){
   return {
     pv: { activeDeckId:'default', decks:{ default:{ name:'Default deck', words: defaultPhrasalVerbs } } },
     vc: { activeDeckId:'default', decks:{ default:{ name:'Default deck', words: defaultVocabulary } } },
   };
 }
-
+ 
 let deckStore = defaultDeckStore();
 let unsubscribeSnapshot = null;
-
+ 
 function setSyncBanner(msg, isError){
   const el = document.getElementById('sync-banner');
   if(!el) return;
   el.textContent = msg;
   el.style.color = isError ? 'var(--clay-deep)' : '';
 }
-
+ 
 // Loads deck data and keeps it live-synced across all devices via Firestore.
 function connectToCloud(onFirstLoad){
   if(!firebaseReady){
@@ -826,9 +826,9 @@ function connectToCloud(onFirstLoad){
     if(onFirstLoad) onFirstLoad();
     return;
   }
-
+ 
   const ref = db.collection(FIRESTORE_DOC_PATH.collection).doc(FIRESTORE_DOC_PATH.doc);
-
+ 
   unsubscribeSnapshot = ref.onSnapshot((snap)=>{
     if(snap.exists){
       deckStore = snap.data().store;
@@ -847,7 +847,7 @@ function connectToCloud(onFirstLoad){
     if(onFirstLoad) onFirstLoad();
   });
 }
-
+ 
 function loadLocalFallback(){
   try{
     const raw = localStorage.getItem(LOCAL_FALLBACK_KEY);
@@ -855,7 +855,7 @@ function loadLocalFallback(){
   }catch(e){ /* ignore corrupt storage */ }
   return defaultDeckStore();
 }
-
+ 
 // Saves deck changes. Teachers push to Firestore (synced to everyone);
 // if the cloud isn't reachable, falls back to local-only storage.
 function saveDeckStore(){
@@ -868,7 +868,7 @@ function saveDeckStore(){
     });
   }
 }
-
+ 
 function refreshAllUI(){
   refreshDeckSelect('pv');
   refreshDeckSelect('vc');
@@ -878,22 +878,22 @@ function refreshAllUI(){
   if(state.vc.mode==='flash') renderFlash('vc'); else renderQuiz('vc');
   if(document.getElementById('teacher-modal').classList.contains('open')) renderTeacherPanel();
 }
-
+ 
 function activeDeck(section){
   const s = deckStore[section];
   return s.decks[s.activeDeckId] || Object.values(s.decks)[0];
 }
-
+ 
 function dataFor(section){
   return activeDeck(section).words;
 }
-
+ 
 /* ---------------- STUDY STATE ---------------- */
 const state = {
   pv: { mode:'flash', flashIndex:0, order:[], quizIndex:0, quizOrder:[], score:0, answered:false },
   vc: { mode:'flash', flashIndex:0, order:[], quizIndex:0, quizOrder:[], score:0, answered:false },
 };
-
+ 
 function resetStudyState(section){
   state[section].flashIndex = 0;
   state[section].order = [];
@@ -901,7 +901,7 @@ function resetStudyState(section){
   state[section].quizOrder = [];
   state[section].score = 0;
 }
-
+ 
 function shuffle(arr){
   const a = arr.slice();
   for(let i=a.length-1;i>0;i--){
@@ -910,7 +910,7 @@ function shuffle(arr){
   }
   return a;
 }
-
+ 
 /* ---------------- SECTION / MODE SWITCHING ---------------- */
 function showSection(section){
   document.getElementById('pv-panel').classList.toggle('active', section==='pv');
@@ -918,7 +918,7 @@ function showSection(section){
   document.getElementById('tab-pv').setAttribute('aria-selected', section==='pv');
   document.getElementById('tab-vc').setAttribute('aria-selected', section==='vc');
 }
-
+ 
 function setMode(section, mode){
   state[section].mode = mode;
   document.getElementById(section+'-mode-flash').classList.toggle('active', mode==='flash');
@@ -928,7 +928,7 @@ function setMode(section, mode){
   if(mode==='flash') renderFlash(section);
   else renderQuiz(section);
 }
-
+ 
 /* ---------------- DECK SELECT UI ---------------- */
 function refreshDeckSelect(section){
   const sel = document.getElementById(section+'-deck-select');
@@ -939,7 +939,7 @@ function refreshDeckSelect(section){
   document.getElementById(section+'-deck-count').textContent =
     `${dataFor(section).length} card${dataFor(section).length===1?'':'s'}`;
 }
-
+ 
 function switchDeck(section, deckId){
   deckStore[section].activeDeckId = deckId;
   saveDeckStore();
@@ -948,31 +948,31 @@ function switchDeck(section, deckId){
   if(state[section].mode === 'flash') renderFlash(section);
   else renderQuiz(section);
 }
-
+ 
 /* ---------------- FLASHCARDS ---------------- */
 function initOrder(section){
   if(state[section].order.length===0){
     state[section].order = shuffle(dataFor(section).map((_,i)=>i));
   }
 }
-
+ 
 function renderFlash(section){
   const data = dataFor(section);
   const area = document.getElementById(section+'-flash-area');
-
+ 
   if(data.length === 0){
     area.innerHTML = `<div class="empty-state"><div class="big-label">This deck is empty</div>Use Teacher tools to add some words first.</div>`;
     document.getElementById(section+'-progress').textContent = 'no cards';
     return;
   }
-
+ 
   initOrder(section);
   if(state[section].flashIndex >= data.length) state[section].flashIndex = 0;
   const idx = state[section].order[state[section].flashIndex];
   const item = data[idx];
   document.getElementById(section+'-progress').textContent =
     `card ${state[section].flashIndex+1} of ${data.length}`;
-
+ 
   let frontHTML, backHTML;
   if(section==='pv'){
     frontHTML = `<div class="combo"><span class="verb">${escapeHtml(item.verb)}</span><span class="join">+</span><span class="particle">${escapeHtml(item.particle)}</span></div><div class="hint">tap to reveal meaning</div>`;
@@ -981,7 +981,7 @@ function renderFlash(section){
     frontHTML = `<div class="headword">${escapeHtml(item.word)}</div><div class="pos-tag">${escapeHtml(item.pos||'')}</div><div class="hint">tap to reveal meaning</div>`;
     backHTML = `<div class="meaning">${escapeHtml(item.meaning)}</div><div class="example">"${escapeHtml(item.example)}"</div>`;
   }
-
+ 
   area.innerHTML = `
     <div class="flip-card" id="${section}-flipcard" onclick="this.classList.toggle('flipped')" role="button" tabindex="0" aria-label="Flashcard, tap to flip">
       <div class="flip-inner">
@@ -995,13 +995,13 @@ function renderFlash(section){
       <button class="ctrl-btn" onclick="nextCard('${section}')">Next →</button>
     </div>
   `;
-
+ 
   const card = document.getElementById(section+'-flipcard');
   card.addEventListener('keydown', (e)=>{
     if(e.key==='Enter' || e.key===' '){ e.preventDefault(); card.classList.toggle('flipped'); }
   });
 }
-
+ 
 function nextCard(section){
   const data = dataFor(section);
   if(data.length===0) return;
@@ -1019,7 +1019,7 @@ function shuffleCards(section){
   state[section].flashIndex = 0;
   renderFlash(section);
 }
-
+ 
 /* ---------------- QUIZ ---------------- */
 function initQuizOrder(section){
   if(state[section].quizOrder.length===0){
@@ -1028,7 +1028,7 @@ function initQuizOrder(section){
     state[section].score = 0;
   }
 }
-
+ 
 function buildOptions(section, correctIdx){
   const data = dataFor(section);
   const pool = data.map((_,i)=>i).filter(i=>i!==correctIdx);
@@ -1036,20 +1036,20 @@ function buildOptions(section, correctIdx){
   const options = shuffle([correctIdx, ...distractors]);
   return options;
 }
-
+ 
 function renderQuiz(section){
   const data = dataFor(section);
   const area = document.getElementById(section+'-quiz-area');
-
+ 
   if(data.length < 2){
     area.innerHTML = `<div class="empty-state"><div class="big-label">Need at least 2 words</div>Add more words to this deck to enable quiz mode.</div>`;
     document.getElementById(section+'-progress').textContent = 'no quiz available';
     return;
   }
-
+ 
   initQuizOrder(section);
   const qOrder = state[section].quizOrder;
-
+ 
   if(state[section].quizIndex >= qOrder.length){
     area.innerHTML = `
       <div class="quiz-done">
@@ -1060,23 +1060,23 @@ function renderQuiz(section){
     document.getElementById(section+'-progress').textContent = `finished`;
     return;
   }
-
+ 
   const idx = qOrder[state[section].quizIndex];
   const item = data[idx];
   state[section].answered = false;
   document.getElementById(section+'-progress').textContent =
     `question ${state[section].quizIndex+1} of ${qOrder.length}`;
-
+ 
   const options = buildOptions(section, idx);
   const promptText = section==='pv'
     ? `What does <strong>${escapeHtml(item.verb)} ${escapeHtml(item.particle)}</strong> mean?`
     : `What does <strong>${escapeHtml(item.word)}</strong> mean?`;
-
+ 
   const optsHTML = options.map(oIdx => {
     const opt = data[oIdx];
     return `<button class="quiz-opt" data-idx="${oIdx}" onclick="answerQuiz('${section}', ${idx}, ${oIdx}, this)">${escapeHtml(opt.meaning)}</button>`;
   }).join('');
-
+ 
   area.innerHTML = `
     <div class="quiz-question">
       <div class="quiz-prompt-label">question ${state[section].quizIndex+1}</div>
@@ -1089,7 +1089,7 @@ function renderQuiz(section){
     </div>
   `;
 }
-
+ 
 function answerQuiz(section, correctIdx, chosenIdx, btnEl){
   if(state[section].answered) return;
   state[section].answered = true;
@@ -1103,19 +1103,19 @@ function answerQuiz(section, correctIdx, chosenIdx, btnEl){
   if(chosenIdx === correctIdx) state[section].score++;
   document.getElementById(section+'-next-q').style.display = 'inline-block';
 }
-
+ 
 function nextQuizQuestion(section){
   state[section].quizIndex++;
   renderQuiz(section);
 }
-
+ 
 function restartQuiz(section){
   state[section].quizOrder = shuffle(dataFor(section).map((_,i)=>i));
   state[section].quizIndex = 0;
   state[section].score = 0;
   renderQuiz(section);
 }
-
+ 
 /* ---------------- UTIL ---------------- */
 function escapeHtml(str){
   if(str===undefined || str===null) return '';
@@ -1123,14 +1123,14 @@ function escapeHtml(str){
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
-
+ 
 function slugId(){
   return 'deck_' + Date.now() + '_' + Math.floor(Math.random()*1000);
 }
-
+ 
 /* ---------------- TEACHER PANEL ---------------- */
 let tpCurrentTab = 'decks';
-
+ 
 function openTeacherPanel(){
   document.getElementById('teacher-modal').classList.add('open');
   document.getElementById('tp-section-select').value = 'pv';
@@ -1140,7 +1140,7 @@ function openTeacherPanel(){
 function closeTeacherPanel(){
   document.getElementById('teacher-modal').classList.remove('open');
 }
-
+ 
 function setTpTab(tab){
   tpCurrentTab = tab;
   ['decks','add','import'].forEach(t=>{
@@ -1149,35 +1149,35 @@ function setTpTab(tab){
   });
   renderTeacherPanel();
 }
-
+ 
 function currentTpSection(){
   return document.getElementById('tp-section-select').value;
 }
-
+ 
 function renderTeacherPanel(){
   const section = currentTpSection();
-
+ 
   // toggle field sets for add-word form
   document.getElementById('pv-fields').style.display = section==='pv' ? 'block' : 'none';
   document.getElementById('vc-fields').style.display = section==='vc' ? 'block' : 'none';
-
+ 
   // deck list
   renderDeckList(section);
-
+ 
   // populate deck dropdowns for add/import panes
   populateDeckDropdown('add-target-deck', section);
   populateDeckDropdown('import-target-deck', section);
-
+ 
   // csv format hint
   const hint = section === 'pv'
     ? 'CSV columns: verb, particle, meaning, example'
     : 'CSV columns: word, part of speech, meaning, example';
   document.getElementById('csv-format-hint').textContent = hint;
-
+ 
   clearStatus('add-status');
   clearStatus('import-status');
 }
-
+ 
 function populateDeckDropdown(selectId, section){
   const sel = document.getElementById(selectId);
   const s = deckStore[section];
@@ -1188,7 +1188,7 @@ function populateDeckDropdown(selectId, section){
   if(Object.keys(s.decks).includes(prevValue)) sel.value = prevValue;
   else sel.value = s.activeDeckId;
 }
-
+ 
 function renderDeckList(section){
   const s = deckStore[section];
   const list = document.getElementById('deck-list');
@@ -1210,13 +1210,13 @@ function renderDeckList(section){
       </div>`;
   }).join('');
 }
-
+ 
 function activateDeckFromPanel(section, deckId){
   switchDeck(section, deckId);
   refreshDeckSelect(section);
   renderDeckList(section);
 }
-
+ 
 function createDeck(){
   const section = currentTpSection();
   const nameInput = document.getElementById('new-deck-name');
@@ -1234,7 +1234,7 @@ function createDeck(){
   populateDeckDropdown('import-target-deck', section);
   refreshDeckSelect(section);
 }
-
+ 
 function deleteDeck(section, deckId){
   const s = deckStore[section];
   if(deckId === 'default') return;
@@ -1251,7 +1251,7 @@ function deleteDeck(section, deckId){
   refreshDeckSelect(section);
   if(state[section].mode === 'flash') renderFlash(section); else renderQuiz(section);
 }
-
+ 
 function exportDeck(section, deckId){
   const deck = deckStore[section].decks[deckId];
   const payload = { wordbenchDeck:true, section, name:deck.name, words:deck.words };
@@ -1265,7 +1265,7 @@ function exportDeck(section, deckId){
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
-
+ 
 function showStatus(elId, msg, ok){
   const el = document.getElementById(elId);
   el.textContent = msg;
@@ -1276,19 +1276,19 @@ function clearStatus(elId){
   el.className = 'status-msg';
   el.textContent = '';
 }
-
+ 
 /* ---- Add single word via form ---- */
 function addWordFromForm(){
   const section = currentTpSection();
   const targetDeckId = document.getElementById('add-target-deck').value;
   const meaning = document.getElementById('f-meaning').value.trim();
   const example = document.getElementById('f-example').value.trim();
-
+ 
   if(!meaning){
     showStatus('add-status', 'Please add a meaning for this word.', false);
     return;
   }
-
+ 
   let entry;
   if(section === 'pv'){
     const verb = document.getElementById('f-verb').value.trim();
@@ -1307,16 +1307,16 @@ function addWordFromForm(){
     }
     entry = { word, pos: pos || '', meaning, example: example || word };
   }
-
+ 
   deckStore[section].decks[targetDeckId].words.push(entry);
   saveDeckStore();
-
+ 
   // clear form
   ['f-verb','f-particle','f-word','f-pos','f-meaning','f-example'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.value = '';
   });
-
+ 
   showStatus('add-status', `Added to "${deckStore[section].decks[targetDeckId].name}".`, true);
   renderDeckList(section);
   refreshDeckSelect(section);
@@ -1325,7 +1325,7 @@ function addWordFromForm(){
     if(state[section].mode === 'flash') renderFlash(section); else renderQuiz(section);
   }
 }
-
+ 
 /* ---- CSV import ---- */
 function parseCsvLine(line){
   // simple CSV split handling quoted commas
@@ -1341,13 +1341,13 @@ function parseCsvLine(line){
   result.push(cur.trim());
   return result;
 }
-
+ 
 function handleCsvUpload(evt){
   const section = currentTpSection();
   const targetDeckId = document.getElementById('import-target-deck').value;
   const file = evt.target.files[0];
   if(!file) return;
-
+ 
   const reader = new FileReader();
   reader.onload = function(e){
     try{
@@ -1357,13 +1357,13 @@ function handleCsvUpload(evt){
         showStatus('import-status', 'The file appears to be empty.', false);
         return;
       }
-
+ 
       // detect and skip header row
       let startIdx = 0;
       const firstRow = parseCsvLine(lines[0]).map(c=>c.toLowerCase());
       const looksLikeHeader = firstRow.includes('meaning') || firstRow.includes('word') || firstRow.includes('verb');
       if(looksLikeHeader) startIdx = 1;
-
+ 
       let added = 0, skipped = 0;
       for(let i=startIdx;i<lines.length;i++){
         const cols = parseCsvLine(lines[i]);
@@ -1379,7 +1379,7 @@ function handleCsvUpload(evt){
           added++;
         }
       }
-
+ 
       saveDeckStore();
       renderDeckList(section);
       refreshDeckSelect(section);
@@ -1387,7 +1387,7 @@ function handleCsvUpload(evt){
         resetStudyState(section);
         if(state[section].mode === 'flash') renderFlash(section); else renderQuiz(section);
       }
-
+ 
       showStatus('import-status', `Imported ${added} word${added===1?'':'s'}${skipped ? `, skipped ${skipped} incomplete row${skipped===1?'':'s'}` : ''}.`, true);
     }catch(err){
       showStatus('import-status', 'Could not read that file. Please check the CSV format and try again.', false);
@@ -1400,14 +1400,14 @@ function handleCsvUpload(evt){
   };
   reader.readAsText(file);
 }
-
+ 
 /* ---- JSON deck import (from exported Wordbench deck files) ---- */
 function handleJsonUpload(evt){
   const section = currentTpSection();
   const targetDeckId = document.getElementById('import-target-deck').value;
   const file = evt.target.files[0];
   if(!file) return;
-
+ 
   const reader = new FileReader();
   reader.onload = function(e){
     try{
@@ -1436,17 +1436,17 @@ function handleJsonUpload(evt){
   };
   reader.readAsText(file);
 }
-
+ 
 /* ---------------- MODE GATE (student vs teacher) ---------------- */
 let currentMode = null; // 'student' | 'teacher'
-
+ 
 function isTeacherMode(){ return currentMode === 'teacher'; }
-
+ 
 function showTeacherLogin(){
   document.getElementById('teacher-login-box').style.display = 'block';
   document.getElementById('teacher-password-input').focus();
 }
-
+ 
 function attemptTeacherLogin(){
   const val = document.getElementById('teacher-password-input').value;
   if(val === TEACHER_PASSWORD){
@@ -1455,7 +1455,7 @@ function attemptTeacherLogin(){
     showStatus('login-status', 'Incorrect password. Please try again.', false);
   }
 }
-
+ 
 function enterAsStudent(){
   currentMode = 'student';
   finishEnteringApp();
@@ -1464,7 +1464,7 @@ function enterAsTeacher(){
   currentMode = 'teacher';
   finishEnteringApp();
 }
-
+ 
 function switchMode(){
   currentMode = null;
   document.getElementById('mode-gate').classList.add('open');
@@ -1473,14 +1473,14 @@ function switchMode(){
   document.getElementById('teacher-password-input').value = '';
   clearStatus('login-status');
 }
-
+ 
 function finishEnteringApp(){
   document.getElementById('mode-gate').classList.remove('open');
   document.getElementById('app-shell').style.display = 'block';
   document.getElementById('teacher-tools-btn').style.display = isTeacherMode() ? 'inline-block' : 'none';
   document.getElementById('mode-indicator').textContent = isTeacherMode() ? 'Teacher view' : 'Student view';
 }
-
+ 
 /* ---------------- INIT ---------------- */
 initFirebase();
 connectToCloud(function(){
