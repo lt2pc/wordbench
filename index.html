@@ -24,6 +24,25 @@
     --shadow: 0 8px 24px rgba(27,36,48,0.10);
   }
 
+  [data-theme="dark"]{
+    --ink:#F2EDE0;
+    --ink-soft:#B8BFC9;
+    --paper:#161B24;
+    --paper-dim:#1F2631;
+    --marigold:#F0B354;
+    --marigold-deep:#F0B354;
+    --sage:#8FB39B;
+    --sage-deep:#8FB39B;
+    --clay:#D97E68;
+    --clay-deep:#D97E68;
+    --line:rgba(242,237,224,0.14);
+    --shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  body, .modal, .flip-card .face, .quiz-question, .quiz-opt, .deck-select, input[type="text"], select.form-select, textarea{
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  }
+
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
   body{
@@ -415,14 +434,21 @@
   .modal-overlay{
     position:fixed; inset:0;
     background:rgba(27,36,48,0.55);
-    display:none;
+    display:flex;
     align-items:flex-start;
     justify-content:center;
     z-index:200;
     padding:40px 20px;
     overflow-y:auto;
+    opacity:0;
+    visibility:hidden;
+    transition: opacity 0.25s ease, visibility 0s linear 0.25s;
   }
-  .modal-overlay.open{ display:flex; }
+  .modal-overlay.open{
+    opacity:1;
+    visibility:visible;
+    transition: opacity 0.25s ease, visibility 0s linear 0s;
+  }
   .modal-row{
     display:flex;
     gap:20px;
@@ -431,6 +457,13 @@
     width:100%;
     flex-wrap:wrap;
     justify-content:center;
+    transform:scale(0.94) translateY(10px);
+    opacity:0;
+    transition: transform 0.28s cubic-bezier(.2,.9,.3,1.2), opacity 0.22s ease;
+  }
+  .modal-overlay.open .modal-row{
+    transform:scale(1) translateY(0);
+    opacity:1;
   }
   .modal{
     background:var(--paper);
@@ -484,7 +517,7 @@
     padding:11px 14px;
     border-radius:10px;
     border:1.5px solid var(--line);
-    background:#fff;
+    background:var(--paper-dim);
     color:var(--ink);
   }
   input[type="text"]:focus, select.form-select:focus, textarea:focus{
@@ -709,6 +742,7 @@
     <span class="deck-count" id="mode-indicator"></span>
     <button class="teacher-link" id="teacher-tools-btn" style="display:none;" onclick="openTeacherPanel()">Teacher tools</button>
     <button class="teacher-link" onclick="switchMode()">Switch view</button>
+    <button class="teacher-link" id="theme-toggle-btn" onclick="toggleTheme()">🌙 Dark mode</button>
   </div>
 </header>
 <div id="sync-banner" class="deck-count" style="max-width:1000px; margin:0 auto; padding:0 24px 12px; opacity:0.7;"></div>
@@ -1979,7 +2013,35 @@ function finishEnteringApp(){
   document.getElementById('mode-indicator').textContent = isTeacherMode() ? 'Teacher view' : 'Student view';
 }
 
+/* ---------------- DARK MODE ---------------- */
+const THEME_STORAGE_KEY = 'wordbench_theme_v1';
+
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = document.getElementById('theme-toggle-btn');
+  if(btn) btn.textContent = theme === 'dark' ? '☀️ Light mode' : '🌙 Dark mode';
+}
+
+function toggleTheme(){
+  const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  const next = current === 'dark' ? 'light' : 'dark';
+  localStorage.setItem(THEME_STORAGE_KEY, next);
+  applyTheme(next);
+}
+
+function initTheme(){
+  const saved = localStorage.getItem(THEME_STORAGE_KEY);
+  if(saved === 'dark' || saved === 'light'){
+    applyTheme(saved);
+  } else {
+    // default to the visitor's system preference if they haven't chosen yet
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    applyTheme(prefersDark ? 'dark' : 'light');
+  }
+}
+
 /* ---------------- INIT ---------------- */
+initTheme();
 initFirebase();
 connectToCloud(function(){
   // initial render happens once data has loaded from the cloud (or fallback)
