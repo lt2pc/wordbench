@@ -9,7 +9,20 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
-  :root{\n    --ink:#1B2430;\n    --ink-soft:#39465A;\n    --paper:#FAF6ED;\n    --paper-dim:#F0EADA;\n    --marigold:#E8A33D;\n    --marigold-deep:#C97F1F;\n    --sage:#7C9885;\n    --sage-deep:#5F7A67;\n    --clay:#C4634F;\n    --clay-deep:#A64C3A;\n    --line:rgba(27,36,48,0.12);\n    --shadow: 0 8px 24px rgba(27,36,48,0.10);\n  }
+  :root{
+    --ink:#1B2430;
+    --ink-soft:#39465A;
+    --paper:#FAF6ED;
+    --paper-dim:#F0EADA;
+    --marigold:#E8A33D;
+    --marigold-deep:#C97F1F;
+    --sage:#7C9885;
+    --sage-deep:#5F7A67;
+    --clay:#C4634F;
+    --clay-deep:#A64C3A;
+    --line:rgba(27,36,48,0.12);
+    --shadow: 0 8px 24px rgba(27,36,48,0.10);
+  }
 
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
@@ -375,7 +388,7 @@
     opacity:0.6;
   }
 
-  /* ---------- TEACHER PANEL (MODAL SPLIT) ---------- */
+  /* ---------- TEACHER PANEL (MODAL) ---------- */
   .modal-overlay{
     position:fixed; inset:0;
     background:rgba(27,36,48,0.55);
@@ -387,34 +400,14 @@
     overflow-y:auto;
   }
   .modal-overlay.open{ display:flex; }
-  
-  .teacher-panel-container {
-    display: flex;
-    gap: 20px;
-    max-width: 1040px;
-    width: 100%;
-    align-items: flex-start;
-    justify-content: center;
-  }
-
   .modal{
     background:var(--paper);
     border-radius:20px;
-    width: 100%;
-    max-width: 640px;
+    max-width:640px;
+    width:100%;
     padding:32px;
     box-shadow:0 20px 60px rgba(0,0,0,0.3);
   }
-  
-  .side-box {
-    background: var(--paper);
-    border-radius: 20px;
-    width: 100%;
-    max-width: 380px;
-    padding: 32px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-  }
-
   .modal-head{
     display:flex;
     justify-content:space-between;
@@ -518,7 +511,6 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    z-index: 10;
   }
   .deck-corner-x:hover{ border-color:var(--clay-deep); color:var(--clay-deep); background:rgba(196,99,79,0.1); }
   .deck-list-item-head{
@@ -534,27 +526,26 @@
 
   .published-summary{
     display:flex;
-    flex-direction: column;
+    flex-wrap:wrap;
     gap:8px;
     margin-bottom:8px;
   }
   .published-chip{
     display:flex;
     align-items:center;
-    justify-content: space-between;
     gap:8px;
     background:rgba(124,152,133,0.15);
     border:1.5px solid var(--sage-deep);
     color:var(--sage-deep);
-    border-radius:12px;
-    padding:8px 12px;
+    border-radius:999px;
+    padding:6px 8px 6px 14px;
     font-size:0.85rem;
     font-weight:600;
   }
   .published-chip .icon-btn{
     border-color:var(--sage-deep);
     color:var(--sage-deep);
-    padding:4px 10px;
+    padding:3px 10px;
     font-size:0.75rem;
   }
   .published-chip .icon-btn:hover{ background:var(--sage-deep); color:#fff; }
@@ -627,46 +618,6 @@
   .status-msg.ok{ background:rgba(124,152,133,0.18); color:var(--sage-deep); }
   .status-msg.err{ background:rgba(196,99,79,0.15); color:var(--clay-deep); }
 
-  /* ---------- GLOBAL TOAST NOTIFICATION ---------- */
-  #global-toast-container {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%) translateY(-40px);
-    z-index: 999;
-    width: 90%;
-    max-width: 480px;
-    pointer-events: none;
-    opacity: 0;
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
-  }
-  #global-toast-container.active {
-    transform: translateX(-50%) translateY(0);
-    opacity: 1;
-  }
-  .toast-card {
-    background: #fff;
-    border-left: 5px solid var(--sage-deep);
-    border-radius: 12px;
-    padding: 16px 20px;
-    box-shadow: 0 10px 30px rgba(27,36,48,0.16);
-    color: var(--ink);
-  }
-  .toast-card.err {
-    border-left-color: var(--clay-deep);
-  }
-  .toast-head {
-    font-family: 'Fraunces', serif;
-    font-weight: 700;
-    font-size: 1.1rem;
-    margin-bottom: 4px;
-  }
-  .toast-body {
-    font-size: 0.88rem;
-    color: var(--ink-soft);
-    line-height: 1.4;
-  }
-
   .modal-actions{
     display:flex;
     gap:10px;
@@ -678,36 +629,19 @@
     *{ animation:none !important; transition:none !important; }
   }
 
-  @media (max-width:960px){
-    .teacher-panel-container {
-      flex-direction: column;
-      align-items: center;
-      gap: 20px;
-    }
-    .side-box {
-      max-width: 640px;
-    }
-  }
-
   @media (max-width:600px){
     .combo{ font-size:1.5rem; }
     .headword{ font-size:1.7rem; }
     .flip-card{ height:280px; }
     .field-row2{ grid-template-columns:1fr; }
-    .modal, .side-box{ padding:22px; }
+    .modal{ padding:22px; }
   }
 </style>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
 
-<div id="global-toast-container">
-  <div class="toast-card" id="global-toast-card">
-    <div class="toast-head" id="global-toast-title">Uploaded successfully!</div>
-    <div class="toast-body" id="global-toast-desc">Details go here.</div>
-  </div>
-</div>
-
+<!-- MODE GATE: shown before anything else -->
 <div class="modal-overlay open" id="mode-gate" style="background:var(--paper); align-items:center;">
   <div class="modal" style="max-width:420px; text-align:center;">
     <div class="brand" style="margin-bottom:6px;">wordbench<span class="dot">.</span></div>
@@ -748,6 +682,7 @@
 
 <main id="main">
 
+  <!-- PHRASAL VERBS SECTION -->
   <section class="section active" id="pv-panel" aria-labelledby="tab-pv">
     <div class="deck-row">
       <select class="deck-select" id="pv-deck-select" onchange="switchDeck('pv', this.value)"></select>
@@ -765,6 +700,7 @@
     <div id="pv-quiz-area" class="quiz-wrap" style="display:none;"></div>
   </section>
 
+  <!-- VOCAB SECTION -->
   <section class="section" id="vc-panel" aria-labelledby="tab-vc">
     <div class="deck-row">
       <select class="deck-select" id="vc-deck-select" onchange="switchDeck('vc', this.value)"></select>
@@ -785,109 +721,108 @@
 </main>
 
 <footer>wordbench — built for classroom practice. use "Teacher tools" to create and manage your own word decks.</footer>
-</div> <div class="modal-overlay" id="teacher-modal">
-  <div class="teacher-panel-container">
-    
-    <div class="modal">
-      <div class="modal-head">
-        <div class="modal-title">Teacher tools</div>
-        <button class="modal-close" onclick="closeTeacherPanel()" aria-label="Close">&times;</button>
-      </div>
-      <div class="modal-sub">create decks, add words, and back them up as files</div>
+</div> <!-- end app-shell -->
 
-      <div class="field-label">Editing section</div>
-      <select class="form-select" id="tp-section-select" onchange="renderTeacherPanel()">
-        <option value="pv">Phrasal verbs</option>
-        <option value="vc">Vocabulary</option>
-      </select>
+<!-- TEACHER MODAL -->
+<div class="modal-overlay" id="teacher-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Teacher tools</div>
+      <button class="modal-close" onclick="closeTeacherPanel()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-sub">create decks, add words, and back them up as files</div>
 
-      <div class="tp-tabs">
-        <button class="tp-tab active" id="tp-tab-decks" onclick="setTpTab('decks')">My decks</button>
-        <button class="tp-tab" id="tp-tab-add" onclick="setTpTab('add')">Add a word</button>
-        <button class="tp-tab" id="tp-tab-import" onclick="setTpTab('import')">Import file</button>
-      </div>
+    <div class="field-label">Editing section</div>
+    <select class="form-select" id="tp-section-select" onchange="renderTeacherPanel()">
+      <option value="pv">Phrasal verbs</option>
+      <option value="vc">Vocabulary</option>
+    </select>
 
-      <div class="tp-pane active" id="tp-pane-decks">
-        <div class="field-label">New deck name</div>
-        <div style="display:flex; gap:8px;">
-          <input type="text" id="new-deck-name" placeholder="e.g. Unit 4 — Travel">
-          <button class="ctrl-btn primary" onclick="createDeck()">Create</button>
-        </div>
-        <div class="field-label">Existing decks</div>
-        <div id="deck-list"></div>
-      </div>
-
-      <div class="tp-pane" id="tp-pane-add">
-        <div class="field-label" style="margin-top:0;">Add to deck</div>
-        <select class="form-select" id="add-target-deck" onchange="tpAddTargetDeck[currentTpSection()] = this.value"></select>
-
-        <div id="pv-fields">
-          <div class="field-row2">
-            <div>
-              <div class="field-label">Verb</div>
-              <input type="text" id="f-verb" placeholder="e.g. give">
-            </div>
-            <div>
-              <div class="field-label">Particle</div>
-              <input type="text" id="f-particle" placeholder="e.g. up">
-            </div>
-          </div>
-        </div>
-        <div id="vc-fields" style="display:none;">
-          <div class="field-row2">
-            <div>
-              <div class="field-label">Word</div>
-              <input type="text" id="f-word" placeholder="e.g. meticulous">
-            </div>
-            <div>
-              <div class="field-label">Part of speech</div>
-              <input type="text" id="f-pos" placeholder="e.g. adj.">
-            </div>
-          </div>
-        </div>
-
-        <div class="field-label">Meaning</div>
-        <input type="text" id="f-meaning" placeholder="Simple definition students will understand">
-
-        <div class="field-label">Example sentence</div>
-        <input type="text" id="f-example" placeholder="A sentence using it naturally">
-
-        <div class="modal-actions">
-          <button class="ctrl-btn primary" onclick="addWordFromForm()">Add word</button>
-        </div>
-        <div class="status-msg" id="add-status"></div>
-      </div>
-
-      <div class="tp-pane" id="tp-pane-import">
-        <div class="field-label" style="margin-top:0;">Import into deck</div>
-        <select class="form-select" id="import-target-deck" onchange="tpImportTargetDeck[currentTpSection()] = this.value"></select>
-
-        <div class="field-label">Upload a CSV file</div>
-        <div class="file-drop" id="csv-drop">
-          <input type="file" id="csv-file-input" accept=".csv,.txt" onchange="handleCsvSelect(event)">
-          <div class="file-drop-name" id="csv-file-name"></div>
-          <div class="field-hint" id="csv-format-hint" style="margin-top:10px;"></div>
-          <button class="ctrl-btn primary" id="csv-import-btn" style="display:none; margin-top:14px;" onclick="confirmCsvImport()">Import this file</button>
-        </div>
-
-        <div class="field-label">Or upload a Wordbench deck file (.json)</div>
-        <div class="file-drop" id="json-drop">
-          <input type="file" id="json-file-input" accept=".json" onchange="handleJsonSelect(event)">
-          <div class="file-drop-name" id="json-file-name"></div>
-          <div class="field-hint">Adds all words from a previously exported deck file into the selected deck above</div>
-          <button class="ctrl-btn primary" id="json-import-btn" style="display:none; margin-top:14px;" onclick="confirmJsonImport()">Import this file</button>
-        </div>
-
-        <div class="status-msg" id="import-status"></div>
-      </div>
+    <div class="tp-tabs">
+      <button class="tp-tab active" id="tp-tab-decks" onclick="setTpTab('decks')">My decks</button>
+      <button class="tp-tab" id="tp-tab-add" onclick="setTpTab('add')">Add a word</button>
+      <button class="tp-tab" id="tp-tab-import" onclick="setTpTab('import')">Import file</button>
     </div>
 
-    <div class="side-box">
-      <div class="modal-title" style="font-size: 1.25rem; margin-bottom: 4px;">Student Visibility</div>
-      <div class="modal-sub" style="margin-bottom: 16px;">Active decks visible to students</div>
-      
+    <!-- DECKS LIST -->
+    <div class="tp-pane active" id="tp-pane-decks">
+      <div class="field-label" style="margin-top:0;">Visible to students right now</div>
       <div id="published-summary-pv" class="published-summary" style="display:none;"></div>
       <div id="published-summary-vc" class="published-summary" style="display:none;"></div>
+
+      <div class="field-label">New deck name</div>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="new-deck-name" placeholder="e.g. Unit 4 — Travel">
+        <button class="ctrl-btn primary" onclick="createDeck()">Create</button>
+      </div>
+      <div class="field-label">Existing decks</div>
+      <div id="deck-list"></div>
+    </div>
+
+    <!-- ADD WORD FORM -->
+    <div class="tp-pane" id="tp-pane-add">
+      <div class="field-label" style="margin-top:0;">Add to deck</div>
+      <select class="form-select" id="add-target-deck" onchange="tpAddTargetDeck[currentTpSection()] = this.value"></select>
+
+      <div id="pv-fields">
+        <div class="field-row2">
+          <div>
+            <div class="field-label">Verb</div>
+            <input type="text" id="f-verb" placeholder="e.g. give">
+          </div>
+          <div>
+            <div class="field-label">Particle</div>
+            <input type="text" id="f-particle" placeholder="e.g. up">
+          </div>
+        </div>
+      </div>
+      <div id="vc-fields" style="display:none;">
+        <div class="field-row2">
+          <div>
+            <div class="field-label">Word</div>
+            <input type="text" id="f-word" placeholder="e.g. meticulous">
+          </div>
+          <div>
+            <div class="field-label">Part of speech</div>
+            <input type="text" id="f-pos" placeholder="e.g. adj.">
+          </div>
+        </div>
+      </div>
+
+      <div class="field-label">Meaning</div>
+      <input type="text" id="f-meaning" placeholder="Simple definition students will understand">
+
+      <div class="field-label">Example sentence</div>
+      <input type="text" id="f-example" placeholder="A sentence using it naturally">
+
+      <div class="modal-actions">
+        <button class="ctrl-btn primary" onclick="addWordFromForm()">Add word</button>
+      </div>
+      <div class="status-msg" id="add-status"></div>
+    </div>
+
+    <!-- IMPORT / EXPORT -->
+    <div class="tp-pane" id="tp-pane-import">
+      <div class="field-label" style="margin-top:0;">Import into deck</div>
+      <select class="form-select" id="import-target-deck" onchange="tpImportTargetDeck[currentTpSection()] = this.value"></select>
+
+      <div class="field-label">Upload a CSV file</div>
+      <div class="file-drop" id="csv-drop">
+        <input type="file" id="csv-file-input" accept=".csv,.txt" onchange="handleCsvSelect(event)">
+        <div class="file-drop-name" id="csv-file-name"></div>
+        <div class="field-hint" id="csv-format-hint" style="margin-top:10px;"></div>
+        <button class="ctrl-btn primary" id="csv-import-btn" style="display:none; margin-top:14px;" onclick="confirmCsvImport()">Import this file</button>
+      </div>
+
+      <div class="field-label">Or upload a Wordbench deck file (.json)</div>
+      <div class="file-drop" id="json-drop">
+        <input type="file" id="json-file-input" accept=".json" onchange="handleJsonSelect(event)">
+        <div class="file-drop-name" id="json-file-name"></div>
+        <div class="field-hint">Adds all words from a previously exported deck file into the selected deck above</div>
+        <button class="ctrl-btn primary" id="json-import-btn" style="display:none; margin-top:14px;" onclick="confirmJsonImport()">Import this file</button>
+      </div>
+
+      <div class="status-msg" id="import-status"></div>
     </div>
 
   </div>
@@ -925,7 +860,10 @@ const defaultVocabulary = [
   { word:"versatile", pos:"adj.", meaning:"able to adapt to many different functions or situations", example:"A versatile employee can handle several different roles." },
 ];
 
-/* ---------------- FIREBASE CONFIG ---------------- */
+/* ---------------- FIREBASE CONFIG ----------------
+   Replace the values below with your own Firebase project's config.
+   (Teacher tools > see setup instructions from Claude for how to get these.)
+------------------------------------------------------ */
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyB70Fxnt7vLHqLwLz_EtuPovAh1T8W6tHU",
   authDomain: "wordbench-32ece.firebaseapp.com",
@@ -935,7 +873,9 @@ const FIREBASE_CONFIG = {
   appId: "1:655143857353:web:f696c61f0219016b7e7118"
 };
 
+// Set your own teacher password here
 const TEACHER_PASSWORD = "teacher123";
+
 const FIRESTORE_DOC_PATH = { collection: "wordbench", doc: "decks" };
 
 let db = null;
@@ -952,7 +892,7 @@ function initFirebase(){
   }
 }
 
-/* ---------------- DECK STORAGE ---------------- */
+/* ---------------- DECK STORAGE (Firestore-backed, localStorage fallback) ---------------- */
 const LOCAL_FALLBACK_KEY = 'wordbench_decks_local_fallback_v1';
 
 function defaultDeckStore(){
@@ -972,6 +912,7 @@ function setSyncBanner(msg, isError){
   el.style.color = isError ? 'var(--clay-deep)' : '';
 }
 
+// Loads deck data and keeps it live-synced across all devices via Firestore.
 function connectToCloud(onFirstLoad){
   if(!firebaseReady){
     setSyncBanner('Running in offline mode — changes save only to this browser.', true);
@@ -987,6 +928,7 @@ function connectToCloud(onFirstLoad){
       deckStore = snap.data().store;
       setSyncBanner("Synced — showing the teacher's latest decks.", false);
     } else {
+      // first time ever — seed the cloud with defaults
       ref.set({ store: deckStore }).catch(()=>{});
       setSyncBanner("Synced — showing the teacher's latest decks.", false);
     }
@@ -1004,10 +946,12 @@ function loadLocalFallback(){
   try{
     const raw = localStorage.getItem(LOCAL_FALLBACK_KEY);
     if(raw) return JSON.parse(raw);
-  }catch(e){}
+  }catch(e){ /* ignore corrupt storage */ }
   return defaultDeckStore();
 }
 
+// Saves deck changes. Teachers push only the affected section to Firestore
+// (field-level update) to avoid overwriting the other section's concurrent changes.
 function saveDeckStore(changedSection){
   localStorage.setItem(LOCAL_FALLBACK_KEY, JSON.stringify(deckStore));
   if(firebaseReady && db && isTeacherMode()){
@@ -1041,6 +985,7 @@ function refreshAllUI(){
 function publishedDeckIds(section){
   const s = deckStore[section];
   if(!s.publishedDeckIds) s.publishedDeckIds = [];
+  // filter out any ids that no longer exist (deck was deleted)
   return s.publishedDeckIds.filter(id => s.decks[id]);
 }
 
@@ -1055,6 +1000,7 @@ function activeDeck(section){
   if(s.selectedDeckId && pubIds.includes(s.selectedDeckId)){
     return s.decks[s.selectedDeckId];
   }
+  // fall back to the first published deck
   s.selectedDeckId = pubIds[0];
   return s.decks[pubIds[0]];
 }
@@ -1128,7 +1074,7 @@ function refreshDeckSelect(section){
 
 function switchDeck(section, deckId){
   deckStore[section].selectedDeckId = deckId;
-  if(isTeacherMode()) saveDeckStore(section);
+  if(isTeacherMode()) saveDeckStore(section); // only teachers' deck choice needs to sync
   resetStudyState(section);
   refreshDeckSelect(section);
   if(state[section].mode === 'flash') renderFlash(section);
@@ -1316,32 +1262,7 @@ function restartQuiz(section){
   renderQuiz(section);
 }
 
-/* ---------------- TOAST SYSTEM ---------------- */
-let toastTimeout = null;
-function triggerGlobalToast(title, desc, isSuccess) {
-  const container = document.getElementById('global-toast-container');
-  const card = document.getElementById('global-toast-card');
-  const titleEl = document.getElementById('global-toast-title');
-  const descEl = document.getElementById('global-toast-desc');
-  
-  if (toastTimeout) clearTimeout(toastTimeout);
-  
-  titleEl.textContent = title;
-  descEl.textContent = desc;
-  
-  if (isSuccess) {
-    card.classList.remove('err');
-  } else {
-    card.classList.add('err');
-  }
-  
-  container.classList.add('active');
-  
-  toastTimeout = setTimeout(() => {
-    container.classList.remove('active');
-  }, 2500);
-}
-
+/* ---------------- UTIL ---------------- */
 function escapeHtml(str){
   if(str===undefined || str===null) return '';
   return String(str)
@@ -1355,7 +1276,7 @@ function slugId(){
 
 /* ---------------- TEACHER PANEL ---------------- */
 let tpCurrentTab = 'decks';
-let tpAddTargetDeck = {};
+let tpAddTargetDeck = {};    // { pv: deckId, vc: deckId } - remembers selection across re-renders
 let tpImportTargetDeck = {};
 
 function openTeacherPanel(){
@@ -1384,14 +1305,18 @@ function currentTpSection(){
 function renderTeacherPanel(){
   const section = currentTpSection();
 
+  // toggle field sets for add-word form
   document.getElementById('pv-fields').style.display = section==='pv' ? 'block' : 'none';
   document.getElementById('vc-fields').style.display = section==='vc' ? 'block' : 'none';
 
+  // deck list
   renderDeckList(section);
 
+  // populate deck dropdowns for add/import panes
   populateDeckDropdown('add-target-deck', section);
   populateDeckDropdown('import-target-deck', section);
 
+  // csv format hint
   const hint = section === 'pv'
     ? 'CSV columns: verb, particle, meaning, example'
     : 'CSV columns: word, part of speech, meaning, example';
@@ -1444,7 +1369,7 @@ function renderDeckList(section){
 
     return `
       <div class="deck-list-item deck-list-item-block">
-        <button class="deck-corner-x" onclick="event.stopPropagation(); deleteDeck('${section}','${id}')" aria-label="Delete deck" title="Delete deck">&times;</button>
+        <button class="deck-corner-x" onclick="deleteDeck('${section}','${id}')" aria-label="Delete deck" title="Delete deck">&times;</button>
         <div class="deck-list-item-head">
           <div>
             <div class="name">${escapeHtml(deck.name)} ${published ? '<span style="color:var(--sage-deep); font-size:0.75rem;">● visible to students</span>' : ''}</div>
@@ -1541,7 +1466,7 @@ function renameDeck(section, deckId){
   const s = deckStore[section];
   const current = s.decks[deckId].name;
   const newName = prompt('Rename deck:', current);
-  if(newName === null) return;
+  if(newName === null) return; // cancelled
   const trimmed = newName.trim();
   if(!trimmed) return;
   s.decks[deckId].name = trimmed;
@@ -1620,12 +1545,15 @@ function showStatus(elId, msg, ok){
   el.textContent = msg;
   el.className = 'status-msg show ' + (ok ? 'ok' : 'err');
 }
+function showStatusHeadline(elId, headline, detail, ok){
+  const el = document.getElementById(elId);
+  el.innerHTML = `<strong>${escapeHtml(headline)}</strong><br>${escapeHtml(detail)}`;
+  el.className = 'status-msg show ' + (ok ? 'ok' : 'err');
+}
 function clearStatus(elId){
   const el = document.getElementById(elId);
-  if(el) {
-    el.className = 'status-msg';
-    el.textContent = '';
-  }
+  el.className = 'status-msg';
+  el.textContent = '';
 }
 
 /* ---- Add single word via form ---- */
@@ -1668,12 +1596,13 @@ function addWordFromForm(){
   deckStore[section].decks[targetDeckId].words.push(entry);
   saveDeckStore(section);
 
+  // clear form
   ['f-verb','f-particle','f-word','f-pos','f-meaning','f-example'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.value = '';
   });
 
-  triggerGlobalToast('Added successfully!', `Added item to context deck.`, true);
+  showStatus('add-status', `Added to "${deckStore[section].decks[targetDeckId].name}".`, true);
   renderDeckList(section);
   refreshDeckSelect(section);
   if(deckStore[section].selectedDeckId === targetDeckId){
@@ -1682,7 +1611,8 @@ function addWordFromForm(){
   }
 }
 
-/* ---- File Utilities ---- */
+/* ---- CSV import ---- */
+/* ---- Pending file state (selected but not yet imported) ---- */
 let pendingCsvFile = null;
 let pendingJsonFile = null;
 
@@ -1745,6 +1675,7 @@ function resetJsonDrop(){
 }
 
 function parseCsvLine(line){
+  // simple CSV split handling quoted commas
   const result = [];
   let cur = '';
   let inQuotes = false;
@@ -1765,7 +1696,7 @@ function confirmCsvImport(){
   if(!file) return;
 
   if(!targetDeckId || !deckStore[section].decks[targetDeckId]){
-    triggerGlobalToast('Import Failed', 'There are no decks here. Create a deck first under "My decks".', false);
+    showStatus('import-status', 'There are no decks here. Create a deck first under "My decks".', false);
     return;
   }
 
@@ -1775,10 +1706,11 @@ function confirmCsvImport(){
       const text = e.target.result;
       const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length>0);
       if(lines.length === 0){
-        triggerGlobalToast('Import Failed', 'The file appears to be empty.', false);
+        showStatus('import-status', 'The file appears to be empty.', false);
         return;
       }
 
+      // detect and skip header row
       let startIdx = 0;
       const firstRow = parseCsvLine(lines[0]).map(c=>c.toLowerCase());
       const looksLikeHeader = firstRow.includes('meaning') || firstRow.includes('word') || firstRow.includes('verb');
@@ -1808,15 +1740,20 @@ function confirmCsvImport(){
         if(state[section].mode === 'flash') renderFlash(section); else renderQuiz(section);
       }
 
-      triggerGlobalToast('Uploaded successfully!', `Imported ${added} words into your deck collection.`, true);
+      showStatusHeadline('import-status', 'Uploaded successfully!', `Imported ${added} word${added===1?'':'s'}${skipped ? `, skipped ${skipped} incomplete row${skipped===1?'':'s'}` : ''}.`, true);
     }catch(err){
-      triggerGlobalToast('Import Failed', 'Please check your CSV structural values and layout details.', false);
+      showStatus('import-status', 'Could not read that file. Please check the CSV format and try again.', false);
     }
+    resetCsvDrop();
+  };
+  reader.onerror = function(){
+    showStatus('import-status', 'Could not read that file.', false);
     resetCsvDrop();
   };
   reader.readAsText(file);
 }
 
+/* ---- JSON deck import (from exported Wordbench deck files) ---- */
 function confirmJsonImport(){
   const section = currentTpSection();
   const targetDeckId = document.getElementById('import-target-deck').value;
@@ -1824,7 +1761,7 @@ function confirmJsonImport(){
   if(!file) return;
 
   if(!targetDeckId || !deckStore[section].decks[targetDeckId]){
-    triggerGlobalToast('Import Failed', 'There are no decks here. Create a deck first under "My decks".', false);
+    showStatus('import-status', 'There are no decks here. Create a deck first under "My decks".', false);
     return;
   }
 
@@ -1833,11 +1770,11 @@ function confirmJsonImport(){
     try{
       const payload = JSON.parse(e.target.result);
       if(!payload || !Array.isArray(payload.words)){
-        triggerGlobalToast('Import Failed', 'That file does not look like a Wordbench layout file.', false);
+        showStatus('import-status', 'That file does not look like a Wordbench deck.', false);
         return;
       }
       if(payload.section && payload.section !== section){
-        triggerGlobalToast('Section Conflict', `File belongs to the ${payload.section === 'pv' ? 'Phrasal verbs' : 'Vocabulary'} setup.`, false);
+        showStatus('import-status', `That file was exported from the ${payload.section === 'pv' ? 'Phrasal verbs' : 'Vocabulary'} section — switch the "Editing section" above to match before importing.`, false);
         return;
       }
       deckStore[section].decks[targetDeckId].words.push(...payload.words);
@@ -1848,20 +1785,20 @@ function confirmJsonImport(){
         resetStudyState(section);
         if(state[section].mode === 'flash') renderFlash(section); else renderQuiz(section);
       }
-      triggerGlobalToast('Uploaded successfully!', `Imported context blocks from inside the backup pack.`, true);
+      showStatusHeadline('import-status', 'Uploaded successfully!', `Imported ${payload.words.length} word${payload.words.length===1?'':'s'} from "${payload.name || 'file'}".`, true);
     }catch(err){
-      triggerGlobalToast('Import Failed', 'Invalid operational backup data format configurations.', false);
+      showStatus('import-status', 'Could not read that file. Make sure it is a valid Wordbench .json export.', false);
     }
     resetJsonDrop();
   };
   reader.readAsText(file);
 }
 
-/* ---------------- REGULAR AUTH SYSTEM ---------------- */
+/* ---------------- MODE GATE (student vs teacher) ---------------- */
 const MODE_STORAGE_KEY = 'wordbench_mode_session_v1';
-const MODE_SESSION_HOURS = 8;
+const MODE_SESSION_HOURS = 8; // how long a login stays valid across refreshes
 
-let currentMode = null;
+let currentMode = null; // 'student' | 'teacher'
 
 function isTeacherMode(){ return currentMode === 'teacher'; }
 
@@ -1935,12 +1872,15 @@ function finishEnteringApp(){
 /* ---------------- INIT ---------------- */
 initFirebase();
 connectToCloud(function(){
+  // initial render happens once data has loaded from the cloud (or fallback)
   refreshDeckSelect('pv');
   refreshDeckSelect('vc');
   renderFlash('pv');
   renderFlash('vc');
 });
 
+// Restore a previous login/mode if it hasn't expired yet, so refreshing the page
+// doesn't force the person to choose student/teacher and re-enter the password again.
 (function restoreModeSession(){
   const savedMode = loadModeSession();
   if(savedMode === 'teacher'){
@@ -1948,6 +1888,7 @@ connectToCloud(function(){
   } else if(savedMode === 'student'){
     enterAsStudent();
   }
+  // otherwise leave the mode gate showing
 })();
 </script>
 </body>
