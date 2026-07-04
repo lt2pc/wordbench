@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wordbench — Phrasal Verbs & Vocabulary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B2430;
+    --ink-soft:#39465A;
+    --paper:#FAF6ED;
+    --paper-dim:#F0EADA;
+    --marigold:#E8A33D;
+    --marigold-deep:#C97F1F;
+    --sage:#7C9885;
+    --sage-deep:#5F7A67;
+    --clay:#C4634F;
+    --clay-deep:#A64C3A;
+    --line:rgba(27,36,48,0.12);
+    --shadow: 0 8px 24px rgba(27,36,48,0.10);
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  ::selection{ background:var(--marigold); color:var(--ink); }
+
+  .skip-link{
+    position:absolute; left:-999px; top:0;
+    background:var(--ink); color:var(--paper); padding:10px 16px; z-index:100;
+  }
+  .skip-link:focus{ left:8px; top:8px; }
+
+  header.top{
+    padding:28px 24px 20px;
+    max-width:960px;
+    margin:0 auto;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .brand{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:1.6rem;
+    letter-spacing:-0.01em;
+  }
+  .brand .dot{ color:var(--marigold-deep); }
+  .tagline{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.78rem;
+    color:var(--ink-soft);
+    opacity:0.75;
+  }
+
+  nav.sections{
+    max-width:960px;
+    margin:0 auto;
+    padding:0 24px;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .tab{
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:0.95rem;
+    padding:10px 18px;
+    border-radius:999px;
+    border:1.5px solid var(--line);
+    background:transparent;
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition: all 0.18s ease;
+  }
+  .tab:hover{ border-color: var(--ink); color:var(--ink); }
+  .tab[aria-selected="true"].pv{ background:var(--marigold); border-color:var(--marigold-deep); color:var(--ink); }
+  .tab[aria-selected="true"].vc{ background:var(--clay); border-color:var(--clay-deep); color:var(--paper); }
+
+  main{
+    max-width:960px;
+    margin:0 auto;
+    padding:28px 24px 80px;
+  }
+
+  .section{ display:none; }
+  .section.active{ display:block; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+
+  .mode-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+    margin-bottom:24px;
+  }
+  .mode-toggle{
+    display:flex;
+    background:var(--paper-dim);
+    border-radius:999px;
+    padding:4px;
+    border:1px solid var(--line);
+  }
+  .mode-btn{
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:0.88rem;
+    padding:8px 16px;
+    border-radius:999px;
+    border:none;
+    background:transparent;
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .mode-btn.active{ background:var(--ink); color:var(--paper); }
+
+  .progress-tag{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.8rem;
+    color:var(--ink-soft);
+  }
+
+  /* ---------- FLASHCARD ---------- */
+  .card-stage{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:22px;
+  }
+  .flip-card{
+    width:100%;
+    max-width:520px;
+    height:300px;
+    perspective:1400px;
+    cursor:pointer;
+  }
+  .flip-inner{
+    position:relative;
+    width:100%; height:100%;
+    transform-style:preserve-3d;
+    transition: transform 0.55s cubic-bezier(.4,.2,.2,1);
+  }
+  .flip-card.flipped .flip-inner{ transform: rotateY(180deg); }
+  .face{
+    position:absolute; inset:0;
+    backface-visibility:hidden;
+    border-radius:20px;
+    border:1.5px solid var(--line);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:28px;
+    text-align:center;
+    box-shadow:var(--shadow);
+  }
+  .face.front{ background:var(--paper); }
+  .face.back{ transform: rotateY(180deg); }
+  #pv-panel .face.back{ background:var(--ink); color:var(--paper); }
+  #vc-panel .face.back{ background:var(--clay); color:var(--paper); }
+
+  .combo{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:2.1rem;
+  }
+  .combo .verb{ color:var(--ink); }
+  .combo .join{
+    color:var(--marigold-deep);
+    font-family:'JetBrains Mono', monospace;
+    font-size:1.1rem;
+    opacity:0.8;
+  }
+  .combo .particle{
+    color:var(--marigold-deep);
+    border-bottom:3px solid var(--marigold);
+  }
+  .flip-card.flipped .combo{ transform: scale(0.001); transition: transform 0.01s; }
+
+  .headword{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:2.2rem;
+    color:var(--ink);
+  }
+  .pos-tag{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.75rem;
+    color:var(--clay-deep);
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    margin-top:8px;
+  }
+  .hint{
+    margin-top:18px;
+    font-size:0.82rem;
+    font-family:'JetBrains Mono', monospace;
+    color:var(--ink-soft);
+    opacity:0.6;
+  }
+
+  .meaning{
+    font-size:1.3rem;
+    font-weight:600;
+    margin-bottom:10px;
+    line-height:1.35;
+  }
+  .example{
+    font-size:0.98rem;
+    opacity:0.9;
+    font-style:italic;
+    line-height:1.5;
+  }
+
+  .card-controls{
+    display:flex;
+    gap:12px;
+    align-items:center;
+  }
+  .ctrl-btn{
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:0.9rem;
+    padding:10px 20px;
+    border-radius:12px;
+    border:1.5px solid var(--ink);
+    background:var(--paper);
+    color:var(--ink);
+    cursor:pointer;
+    transition: all 0.15s ease;
+  }
+  .ctrl-btn:hover{ background:var(--ink); color:var(--paper); }
+  .ctrl-btn:focus-visible, .tab:focus-visible, .mode-btn:focus-visible, .quiz-opt:focus-visible{
+    outline:3px solid var(--marigold-deep);
+    outline-offset:2px;
+  }
+
+  /* ---------- QUIZ ---------- */
+  .quiz-wrap{ max-width:600px; margin:0 auto; }
+  .quiz-question{
+    background:var(--paper-dim);
+    border:1.5px solid var(--line);
+    border-radius:18px;
+    padding:28px;
+    margin-bottom:20px;
+  }
+  .quiz-prompt-label{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.75rem;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--ink-soft);
+    opacity:0.7;
+    margin-bottom:10px;
+  }
+  .quiz-prompt{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:1.5rem;
+    line-height:1.4;
+  }
+  .quiz-options{
+    display:grid;
+    gap:10px;
+  }
+  .quiz-opt{
+    text-align:left;
+    font-family:'Inter', sans-serif;
+    font-size:1rem;
+    font-weight:500;
+    padding:14px 18px;
+    border-radius:12px;
+    border:1.5px solid var(--line);
+    background:var(--paper);
+    cursor:pointer;
+    transition: all 0.15s ease;
+  }
+  .quiz-opt:hover{ border-color: var(--ink); }
+  .quiz-opt.correct{ background:var(--sage); border-color:var(--sage-deep); color:#fff; }
+  .quiz-opt.incorrect{ background:var(--clay); border-color:var(--clay-deep); color:#fff; }
+  .quiz-opt[disabled]{ cursor:default; }
+
+  .quiz-footer{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:18px;
+  }
+  .score-tag{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.85rem;
+    color:var(--ink-soft);
+  }
+
+  .quiz-done{
+    text-align:center;
+    padding:50px 20px;
+  }
+  .quiz-done .big{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:2.6rem;
+    color:var(--marigold-deep);
+  }
+
+  footer{
+    max-width:960px;
+    margin:0 auto;
+    padding:20px 24px 40px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.78rem;
+    color:var(--ink-soft);
+    opacity:0.6;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation:none !important; transition:none !important; }
+  }
+
+  @media (max-width:600px){
+    .combo{ font-size:1.5rem; }
+    .headword{ font-size:1.7rem; }
+    .flip-card{ height:280px; }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="top">
+  <div>
+    <div class="brand">wordbench<span class="dot">.</span></div>
+    <div class="tagline">particles, words, and how they fit together</div>
+  </div>
+</header>
+
+<nav class="sections" role="tablist" aria-label="Choose a section">
+  <button class="tab pv" role="tab" aria-selected="true" id="tab-pv" onclick="showSection('pv')">Phrasal verbs</button>
+  <button class="tab vc" role="tab" aria-selected="false" id="tab-vc" onclick="showSection('vc')">Vocabulary</button>
+</nav>
+
+<main id="main">
+
+  <!-- PHRASAL VERBS SECTION -->
+  <section class="section active" id="pv-panel" aria-labelledby="tab-pv">
+    <div class="mode-row">
+      <div class="mode-toggle" role="tablist" aria-label="Study mode">
+        <button class="mode-btn active" id="pv-mode-flash" onclick="setMode('pv','flash')">Flashcards</button>
+        <button class="mode-btn" id="pv-mode-quiz" onclick="setMode('pv','quiz')">Quiz</button>
+      </div>
+      <div class="progress-tag" id="pv-progress">card 1 of —</div>
+    </div>
+
+    <div id="pv-flash-area" class="card-stage"></div>
+    <div id="pv-quiz-area" class="quiz-wrap" style="display:none;"></div>
+  </section>
+
+  <!-- VOCAB SECTION -->
+  <section class="section" id="vc-panel" aria-labelledby="tab-vc">
+    <div class="mode-row">
+      <div class="mode-toggle" role="tablist" aria-label="Study mode">
+        <button class="mode-btn active" id="vc-mode-flash" onclick="setMode('vc','flash')">Flashcards</button>
+        <button class="mode-btn" id="vc-mode-quiz" onclick="setMode('vc','quiz')">Quiz</button>
+      </div>
+      <div class="progress-tag" id="vc-progress">card 1 of —</div>
+    </div>
+
+    <div id="vc-flash-area" class="card-stage"></div>
+    <div id="vc-quiz-area" class="quiz-wrap" style="display:none;"></div>
+  </section>
+
+</main>
+
+<footer>wordbench — built for classroom practice. mixed-level word lists, editable in the source file.</footer>
+
+<script>
+/* ---------------- DATA ---------------- */
+const phrasalVerbs = [
+  { verb:"give", particle:"up", meaning:"to stop trying, or to quit something", example:"She didn't give up even after failing the test twice." },
+  { verb:"look", particle:"forward to", meaning:"to feel excited about something that will happen", example:"I'm looking forward to the weekend trip." },
+  { verb:"figure", particle:"out", meaning:"to understand or solve something after thinking", example:"It took him an hour to figure out the math problem." },
+  { verb:"run", particle:"into", meaning:"to meet someone by chance", example:"I ran into my old teacher at the supermarket." },
+  { verb:"put", particle:"off", meaning:"to delay or postpone something", example:"Don't put off your homework until Sunday night." },
+  { verb:"bring", particle:"up", meaning:"to mention a topic in conversation", example:"He brought up the schedule change during the meeting." },
+  { verb:"turn", particle:"down", meaning:"to refuse an offer or request", example:"She turned down the job offer to stay closer to home." },
+  { verb:"get", particle:"along with", meaning:"to have a friendly relationship with someone", example:"My sister gets along with almost everyone she meets." },
+  { verb:"come", particle:"across", meaning:"to find something by chance", example:"I came across an old photo while cleaning my room." },
+  { verb:"set", particle:"up", meaning:"to arrange or prepare something", example:"Can you set up the projector before class starts?" },
+  { verb:"take", particle:"after", meaning:"to resemble a parent or relative", example:"She takes after her mother — same laugh, same humor." },
+  { verb:"call", particle:"off", meaning:"to cancel something planned", example:"They called off the picnic because of the storm." },
+];
+
+const vocabulary = [
+  { word:"meticulous", pos:"adj.", meaning:"very careful and precise about details", example:"The editor was meticulous, catching every small typo." },
+  { word:"ambiguous", pos:"adj.", meaning:"having more than one possible meaning; unclear", example:"His answer was ambiguous, so nobody knew what he meant." },
+  { word:"resilient", pos:"adj.", meaning:"able to recover quickly from difficulties", example:"Despite the setback, the team remained resilient." },
+  { word:"candid", pos:"adj.", meaning:"honest and direct, sometimes bluntly so", example:"She gave a candid opinion about the project's flaws." },
+  { word:"scarce", pos:"adj.", meaning:"not enough of something; hard to find", example:"Fresh water was scarce during the dry season." },
+  { word:"reluctant", pos:"adj.", meaning:"unwilling or hesitant to do something", example:"He was reluctant to speak in front of the class." },
+  { word:"thorough", pos:"adj.", meaning:"complete and careful, missing no detail", example:"The inspector did a thorough check of the building." },
+  { word:"prevalent", pos:"adj.", meaning:"widespread; common at a particular time or place", example:"Remote work became prevalent after the pandemic." },
+  { word:"insight", pos:"n.", meaning:"a clear understanding of a complex situation", example:"Her comment gave us real insight into the problem." },
+  { word:"diligent", pos:"adj.", meaning:"showing careful and steady effort", example:"He was diligent about reviewing his notes every night." },
+  { word:"skeptical", pos:"adj.", meaning:"having doubts; not easily convinced", example:"She stayed skeptical about the surprising claim." },
+  { word:"versatile", pos:"adj.", meaning:"able to adapt to many different functions or situations", example:"A versatile employee can handle several different roles." },
+];
+
+/* ---------------- STATE ---------------- */
+const state = {
+  pv: { mode:'flash', flashIndex:0, order:[], quizIndex:0, quizOrder:[], score:0, answered:false },
+  vc: { mode:'flash', flashIndex:0, order:[], quizIndex:0, quizOrder:[], score:0, answered:false },
+};
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function dataFor(section){ return section === 'pv' ? phrasalVerbs : vocabulary; }
+
+/* ---------------- SECTION / MODE SWITCHING ---------------- */
+function showSection(section){
+  document.getElementById('pv-panel').classList.toggle('active', section==='pv');
+  document.getElementById('vc-panel').classList.toggle('active', section==='vc');
+  document.getElementById('tab-pv').setAttribute('aria-selected', section==='pv');
+  document.getElementById('tab-vc').setAttribute('aria-selected', section==='vc');
+}
+
+function setMode(section, mode){
+  state[section].mode = mode;
+  document.getElementById(section+'-mode-flash').classList.toggle('active', mode==='flash');
+  document.getElementById(section+'-mode-quiz').classList.toggle('active', mode==='quiz');
+  document.getElementById(section+'-flash-area').style.display = mode==='flash' ? 'flex' : 'none';
+  document.getElementById(section+'-quiz-area').style.display = mode==='quiz' ? 'block' : 'none';
+  if(mode==='flash') renderFlash(section);
+  else renderQuiz(section);
+}
+
+/* ---------------- FLASHCARDS ---------------- */
+function initOrder(section){
+  if(state[section].order.length===0){
+    state[section].order = shuffle(dataFor(section).map((_,i)=>i));
+  }
+}
+
+function renderFlash(section){
+  initOrder(section);
+  const data = dataFor(section);
+  const idx = state[section].order[state[section].flashIndex];
+  const item = data[idx];
+  const area = document.getElementById(section+'-flash-area');
+  document.getElementById(section+'-progress').textContent =
+    `card ${state[section].flashIndex+1} of ${data.length}`;
+
+  let frontHTML, backHTML;
+  if(section==='pv'){
+    frontHTML = `<div class="combo"><span class="verb">${item.verb}</span><span class="join">+</span><span class="particle">${item.particle}</span></div><div class="hint">tap to reveal meaning</div>`;
+    backHTML = `<div class="meaning">${item.verb} ${item.particle}</div><div class="meaning" style="font-size:1.05rem; font-weight:500; opacity:0.9;">${item.meaning}</div><div class="example">"${item.example}"</div>`;
+  } else {
+    frontHTML = `<div class="headword">${item.word}</div><div class="pos-tag">${item.pos}</div><div class="hint">tap to reveal meaning</div>`;
+    backHTML = `<div class="meaning">${item.meaning}</div><div class="example">"${item.example}"</div>`;
+  }
+
+  area.innerHTML = `
+    <div class="flip-card" id="${section}-flipcard" onclick="this.classList.toggle('flipped')" role="button" tabindex="0" aria-label="Flashcard, tap to flip">
+      <div class="flip-inner">
+        <div class="face front">${frontHTML}</div>
+        <div class="face back">${backHTML}</div>
+      </div>
+    </div>
+    <div class="card-controls">
+      <button class="ctrl-btn" onclick="prevCard('${section}')">← Previous</button>
+      <button class="ctrl-btn" onclick="shuffleCards('${section}')">Shuffle</button>
+      <button class="ctrl-btn" onclick="nextCard('${section}')">Next →</button>
+    </div>
+  `;
+
+  const card = document.getElementById(section+'-flipcard');
+  card.addEventListener('keydown', (e)=>{
+    if(e.key==='Enter' || e.key===' '){ e.preventDefault(); card.classList.toggle('flipped'); }
+  });
+}
+
+function nextCard(section){
+  const data = dataFor(section);
+  state[section].flashIndex = (state[section].flashIndex+1) % data.length;
+  renderFlash(section);
+}
+function prevCard(section){
+  const data = dataFor(section);
+  state[section].flashIndex = (state[section].flashIndex-1+data.length) % data.length;
+  renderFlash(section);
+}
+function shuffleCards(section){
+  state[section].order = shuffle(dataFor(section).map((_,i)=>i));
+  state[section].flashIndex = 0;
+  renderFlash(section);
+}
+
+/* ---------------- QUIZ ---------------- */
+function initQuizOrder(section){
+  if(state[section].quizOrder.length===0){
+    state[section].quizOrder = shuffle(dataFor(section).map((_,i)=>i));
+    state[section].quizIndex = 0;
+    state[section].score = 0;
+  }
+}
+
+function buildOptions(section, correctIdx){
+  const data = dataFor(section);
+  const pool = data.map((_,i)=>i).filter(i=>i!==correctIdx);
+  const distractors = shuffle(pool).slice(0,3);
+  const options = shuffle([correctIdx, ...distractors]);
+  return options;
+}
+
+function renderQuiz(section){
+  initQuizOrder(section);
+  const data = dataFor(section);
+  const qOrder = state[section].quizOrder;
+
+  if(state[section].quizIndex >= qOrder.length){
+    document.getElementById(section+'-quiz-area').innerHTML = `
+      <div class="quiz-done">
+        <div class="quiz-prompt-label">quiz complete</div>
+        <div class="big">${state[section].score} / ${qOrder.length}</div>
+        <button class="ctrl-btn" style="margin-top:20px;" onclick="restartQuiz('${section}')">Try again</button>
+      </div>`;
+    document.getElementById(section+'-progress').textContent = `finished`;
+    return;
+  }
+
+  const idx = qOrder[state[section].quizIndex];
+  const item = data[idx];
+  state[section].answered = false;
+  document.getElementById(section+'-progress').textContent =
+    `question ${state[section].quizIndex+1} of ${qOrder.length}`;
+
+  const options = buildOptions(section, idx);
+  const promptText = section==='pv'
+    ? `What does <strong>${item.verb} ${item.particle}</strong> mean?`
+    : `What does <strong>${item.word}</strong> mean?`;
+
+  const optsHTML = options.map(oIdx => {
+    const opt = data[oIdx];
+    return `<button class="quiz-opt" data-idx="${oIdx}" onclick="answerQuiz('${section}', ${idx}, ${oIdx}, this)">${opt.meaning}</button>`;
+  }).join('');
+
+  document.getElementById(section+'-quiz-area').innerHTML = `
+    <div class="quiz-question">
+      <div class="quiz-prompt-label">question ${state[section].quizIndex+1}</div>
+      <div class="quiz-prompt">${promptText}</div>
+    </div>
+    <div class="quiz-options">${optsHTML}</div>
+    <div class="quiz-footer">
+      <span class="score-tag">score: ${state[section].score} / ${state[section].quizIndex}</span>
+      <button class="ctrl-btn" id="${section}-next-q" style="display:none;" onclick="nextQuizQuestion('${section}')">Next question →</button>
+    </div>
+  `;
+}
+
+function answerQuiz(section, correctIdx, chosenIdx, btnEl){
+  if(state[section].answered) return;
+  state[section].answered = true;
+  const buttons = document.querySelectorAll('#'+section+'-quiz-area .quiz-opt');
+  buttons.forEach(b=>{
+    b.disabled = true;
+    const bIdx = parseInt(b.getAttribute('data-idx'));
+    if(bIdx === correctIdx) b.classList.add('correct');
+    else if(bIdx === chosenIdx) b.classList.add('incorrect');
+  });
+  if(chosenIdx === correctIdx) state[section].score++;
+  document.getElementById(section+'-next-q').style.display = 'inline-block';
+}
+
+function nextQuizQuestion(section){
+  state[section].quizIndex++;
+  renderQuiz(section);
+}
+
+function restartQuiz(section){
+  state[section].quizOrder = shuffle(dataFor(section).map((_,i)=>i));
+  state[section].quizIndex = 0;
+  state[section].score = 0;
+  renderQuiz(section);
+}
+
+/* ---------------- INIT ---------------- */
+renderFlash('pv');
+renderFlash('vc');
+</script>
+</body>
+</html>
