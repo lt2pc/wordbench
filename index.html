@@ -489,11 +489,30 @@
   .tp-pane.active{ display:block; }
 
   .deck-list-item{
-    padding:10px 14px;
+    position:relative;
+    padding:10px 40px 10px 14px;
     border:1.5px solid var(--line);
     border-radius:10px;
     margin-bottom:8px;
   }
+  .deck-corner-x{
+    position:absolute;
+    top:8px;
+    right:8px;
+    width:26px;
+    height:26px;
+    line-height:1;
+    border-radius:50%;
+    border:1.5px solid var(--line);
+    background:var(--paper);
+    color:var(--ink-soft);
+    font-size:1.1rem;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .deck-corner-x:hover{ border-color:var(--clay-deep); color:var(--clay-deep); background:rgba(196,99,79,0.1); }
   .deck-list-item-head{
     display:flex;
     align-items:center;
@@ -503,7 +522,39 @@
   }
   .deck-list-item .name{ font-weight:600; }
   .deck-list-item .meta{ font-size:0.78rem; color:var(--ink-soft); font-family:'JetBrains Mono', monospace; }
-  .deck-list-actions{ display:flex; gap:6px; flex-wrap:wrap; }
+  .deck-list-actions{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+
+  .published-summary{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .published-chip{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:rgba(124,152,133,0.15);
+    border:1.5px solid var(--sage-deep);
+    color:var(--sage-deep);
+    border-radius:999px;
+    padding:6px 8px 6px 14px;
+    font-size:0.85rem;
+    font-weight:600;
+  }
+  .published-chip .icon-btn{
+    border-color:var(--sage-deep);
+    color:var(--sage-deep);
+    padding:3px 10px;
+    font-size:0.75rem;
+  }
+  .published-chip .icon-btn:hover{ background:var(--sage-deep); color:#fff; }
+  .published-empty{
+    font-size:0.85rem;
+    color:var(--ink-soft);
+    opacity:0.75;
+    margin-bottom:8px;
+  }
   .word-list{
     margin-top:12px;
     padding-top:12px;
@@ -695,7 +746,11 @@
 
     <!-- DECKS LIST -->
     <div class="tp-pane active" id="tp-pane-decks">
-      <div class="field-label" style="margin-top:0;">New deck name</div>
+      <div class="field-label" style="margin-top:0;">Visible to students right now</div>
+      <div id="published-summary-pv" class="published-summary" style="display:none;"></div>
+      <div id="published-summary-vc" class="published-summary" style="display:none;"></div>
+
+      <div class="field-label">New deck name</div>
       <div style="display:flex; gap:8px;">
         <input type="text" id="new-deck-name" placeholder="e.g. Unit 4 — Travel">
         <button class="ctrl-btn primary" onclick="createDeck()">Create</button>
@@ -842,8 +897,8 @@ const LOCAL_FALLBACK_KEY = 'wordbench_decks_local_fallback_v1';
 
 function defaultDeckStore(){
   return {
-    pv: { activeDeckId:'default', decks:{ default:{ name:'Default deck', words: defaultPhrasalVerbs } } },
-    vc: { activeDeckId:'default', decks:{ default:{ name:'Default deck', words: defaultVocabulary } } },
+    pv: { publishedDeckIds:['default'], selectedDeckId:'default', decks:{ default:{ name:'Default deck', words: defaultPhrasalVerbs } } },
+    vc: { publishedDeckIds:['default'], selectedDeckId:'default', decks:{ default:{ name:'Default deck', words: defaultVocabulary } } },
   };
 }
 
@@ -927,9 +982,27 @@ function refreshAllUI(){
   if(document.getElementById('teacher-modal').classList.contains('open')) renderTeacherPanel();
 }
 
+function publishedDeckIds(section){
+  const s = deckStore[section];
+  if(!s.publishedDeckIds) s.publishedDeckIds = [];
+  // filter out any ids that no longer exist (deck was deleted)
+  return s.publishedDeckIds.filter(id => s.decks[id]);
+}
+
+function isPublished(section, deckId){
+  return publishedDeckIds(section).includes(deckId);
+}
+
 function activeDeck(section){
   const s = deckStore[section];
-  return s.decks[s.activeDeckId] || Object.values(s.decks)[0] || null;
+  const pubIds = publishedDeckIds(section);
+  if(pubIds.length === 0) return null;
+  if(s.selectedDeckId && pubIds.includes(s.selectedDeckId)){
+    return s.decks[s.selectedDeckId];
+  }
+  // fall back to the first published deck
+  s.selectedDeckId = pubIds[0];
+  return s.decks[pubIds[0]];
 }
 
 function dataFor(section){
@@ -982,9 +1055,9 @@ function setMode(section, mode){
 function refreshDeckSelect(section){
   const sel = document.getElementById(section+'-deck-select');
   const s = deckStore[section];
-  const deckIds = Object.keys(s.decks);
+  const pubIds = publishedDeckIds(section);
 
-  if(deckIds.length === 0){
+  if(pubIds.length === 0){
     sel.innerHTML = `<option value="">No decks</option>`;
     sel.disabled = true;
     document.getElementById(section+'-deck-count').textContent = 'There are no decks here.';
@@ -992,16 +1065,16 @@ function refreshDeckSelect(section){
   }
 
   sel.disabled = false;
-  sel.innerHTML = deckIds.map(id =>
-    `<option value="${id}" ${id===s.activeDeckId ? 'selected':''}>${escapeHtml(s.decks[id].name)}</option>`
+  sel.innerHTML = pubIds.map(id =>
+    `<option value="${id}" ${id===s.selectedDeckId ? 'selected':''}>${escapeHtml(s.decks[id].name)}</option>`
   ).join('');
   document.getElementById(section+'-deck-count').textContent =
     `${dataFor(section).length} card${dataFor(section).length===1?'':'s'}`;
 }
 
 function switchDeck(section, deckId){
-  deckStore[section].activeDeckId = deckId;
-  saveDeckStore(section);
+  deckStore[section].selectedDeckId = deckId;
+  if(isTeacherMode()) saveDeckStore(section); // only teachers' deck choice needs to sync
   resetStudyState(section);
   refreshDeckSelect(section);
   if(state[section].mode === 'flash') renderFlash(section);
@@ -1266,8 +1339,8 @@ function populateDeckDropdown(selectId, section){
   if(desired && Object.keys(s.decks).includes(desired)){
     sel.value = desired;
   } else {
-    sel.value = s.activeDeckId;
-    trackerMap[section] = s.activeDeckId;
+    sel.value = s.selectedDeckId;
+    trackerMap[section] = s.selectedDeckId;
   }
 }
 
@@ -1276,6 +1349,8 @@ function renderDeckList(section){
   const list = document.getElementById('deck-list');
   const deckIds = Object.keys(s.decks);
 
+  renderPublishedSummary(section);
+
   if(deckIds.length === 0){
     list.innerHTML = `<div class="empty-state" style="padding:30px 20px;"><div class="big-label">There are no decks here.</div>Create a new deck above to get started.</div>`;
     return;
@@ -1283,8 +1358,7 @@ function renderDeckList(section){
 
   list.innerHTML = deckIds.map(id => {
     const deck = s.decks[id];
-    const isActive = id === s.activeDeckId;
-    const canDelete = true;
+    const published = isPublished(section, id);
     const wordsHtml = deck.words.map((w, i) => {
       const label = section === 'pv' ? `${w.verb} ${w.particle}` : w.word;
       return `<div class="word-row">
@@ -1295,22 +1369,75 @@ function renderDeckList(section){
 
     return `
       <div class="deck-list-item deck-list-item-block">
+        <button class="deck-corner-x" onclick="deleteDeck('${section}','${id}')" aria-label="Delete deck" title="Delete deck">&times;</button>
         <div class="deck-list-item-head">
           <div>
-            <div class="name">${escapeHtml(deck.name)} ${isActive ? '<span style="color:var(--sage-deep); font-size:0.75rem;">● active</span>' : ''}</div>
+            <div class="name">${escapeHtml(deck.name)} ${published ? '<span style="color:var(--sage-deep); font-size:0.75rem;">● visible to students</span>' : ''}</div>
             <div class="meta">${deck.words.length} card${deck.words.length===1?'':'s'}</div>
           </div>
           <div class="deck-list-actions">
-            ${!isActive ? `<button class="icon-btn" onclick="activateDeckFromPanel('${section}','${id}')">Use</button>` : ''}
+            <button class="ctrl-btn ${published ? 'danger' : 'primary'}" style="padding:8px 14px; font-size:0.82rem;" onclick="toggleDeckPublish('${section}','${id}')">${published ? 'Deactivate' : 'Activate'}</button>
             <button class="icon-btn" onclick="renameDeck('${section}','${id}')">Rename</button>
             <button class="icon-btn" onclick="exportDeck('${section}','${id}')">Export</button>
-            ${canDelete ? `<button class="icon-btn danger" onclick="deleteDeck('${section}','${id}')">Delete</button>` : ''}
             <button class="icon-btn" onclick="toggleWordList('${section}-${id}')">Words ▾</button>
           </div>
         </div>
         <div class="word-list" id="wordlist-${section}-${id}" style="display:none;">${wordsHtml}</div>
       </div>`;
   }).join('');
+}
+
+function renderPublishedSummary(section){
+  const pvEl = document.getElementById('published-summary-pv');
+  const vcEl = document.getElementById('published-summary-vc');
+  pvEl.style.display = section === 'pv' ? 'flex' : 'none';
+  vcEl.style.display = section === 'vc' ? 'flex' : 'none';
+
+  const el = document.getElementById('published-summary-'+section);
+  if(!el) return;
+  const s = deckStore[section];
+  const pubIds = publishedDeckIds(section);
+
+  if(pubIds.length === 0){
+    el.innerHTML = `<div class="published-empty">Nothing is visible to students yet. Activate a deck below.</div>`;
+    return;
+  }
+
+  el.innerHTML = pubIds.map(id => {
+    const deck = s.decks[id];
+    if(!deck) return '';
+    return `<div class="published-chip">
+      <span>${escapeHtml(deck.name)}</span>
+      <button class="icon-btn danger" onclick="removeFromPublished('${section}','${id}')">Remove</button>
+    </div>`;
+  }).join('');
+}
+
+function toggleDeckPublish(section, deckId){
+  const s = deckStore[section];
+  if(!s.publishedDeckIds) s.publishedDeckIds = [];
+  const idx = s.publishedDeckIds.indexOf(deckId);
+
+  if(idx === -1){
+    s.publishedDeckIds.push(deckId);
+    if(!s.selectedDeckId) s.selectedDeckId = deckId;
+  } else {
+    s.publishedDeckIds.splice(idx, 1);
+    if(s.selectedDeckId === deckId){
+      const remaining = publishedDeckIds(section);
+      s.selectedDeckId = remaining.length ? remaining[0] : null;
+    }
+  }
+
+  saveDeckStore(section);
+  renderDeckList(section);
+  refreshDeckSelect(section);
+  resetStudyState(section);
+  if(state[section].mode === 'flash') renderFlash(section); else renderQuiz(section);
+}
+
+function removeFromPublished(section, deckId){
+  toggleDeckPublish(section, deckId);
 }
 
 function toggleWordList(key){
@@ -1329,7 +1456,7 @@ function deleteWord(section, deckId, wordIndex){
   saveDeckStore(section);
   renderDeckList(section);
   refreshDeckSelect(section);
-  if(deckStore[section].activeDeckId === deckId){
+  if(s.selectedDeckId === deckId){
     resetStudyState(section);
     if(state[section].mode === 'flash') renderFlash(section); else renderQuiz(section);
   }
@@ -1348,12 +1475,6 @@ function renameDeck(section, deckId){
   populateDeckDropdown('add-target-deck', section);
   populateDeckDropdown('import-target-deck', section);
   refreshDeckSelect(section);
-}
-
-function activateDeckFromPanel(section, deckId){
-  switchDeck(section, deckId);
-  refreshDeckSelect(section);
-  renderDeckList(section);
 }
 
 function createDeck(){
@@ -1381,16 +1502,21 @@ function deleteDeck(section, deckId){
   if(!confirm(`Delete deck "${s.decks[deckId].name}"? This can't be undone unless you exported it.`)) return;
   delete s.decks[deckId];
 
+  if(s.publishedDeckIds){
+    s.publishedDeckIds = s.publishedDeckIds.filter(id => id !== deckId);
+  }
+
   const remainingIds = Object.keys(s.decks);
   if(remainingIds.length === 0){
-    s.activeDeckId = null;
-  } else if(s.activeDeckId === deckId){
-    s.activeDeckId = remainingIds[0];
+    s.selectedDeckId = null;
+  } else if(s.selectedDeckId === deckId){
+    const pub = publishedDeckIds(section);
+    s.selectedDeckId = pub.length ? pub[0] : null;
   }
   resetStudyState(section);
 
-  if(tpAddTargetDeck[section] === deckId) tpAddTargetDeck[section] = s.activeDeckId;
-  if(tpImportTargetDeck[section] === deckId) tpImportTargetDeck[section] = s.activeDeckId;
+  if(tpAddTargetDeck[section] === deckId) tpAddTargetDeck[section] = s.selectedDeckId;
+  if(tpImportTargetDeck[section] === deckId) tpImportTargetDeck[section] = s.selectedDeckId;
 
   saveDeckStore(section);
   renderDeckList(section);
@@ -1479,7 +1605,7 @@ function addWordFromForm(){
   showStatus('add-status', `Added to "${deckStore[section].decks[targetDeckId].name}".`, true);
   renderDeckList(section);
   refreshDeckSelect(section);
-  if(deckStore[section].activeDeckId === targetDeckId){
+  if(deckStore[section].selectedDeckId === targetDeckId){
     resetStudyState(section);
     if(state[section].mode === 'flash') renderFlash(section); else renderQuiz(section);
   }
@@ -1609,7 +1735,7 @@ function confirmCsvImport(){
       saveDeckStore(section);
       renderDeckList(section);
       refreshDeckSelect(section);
-      if(deckStore[section].activeDeckId === targetDeckId){
+      if(deckStore[section].selectedDeckId === targetDeckId){
         resetStudyState(section);
         if(state[section].mode === 'flash') renderFlash(section); else renderQuiz(section);
       }
@@ -1655,7 +1781,7 @@ function confirmJsonImport(){
       saveDeckStore(section);
       renderDeckList(section);
       refreshDeckSelect(section);
-      if(deckStore[section].activeDeckId === targetDeckId){
+      if(deckStore[section].selectedDeckId === targetDeckId){
         resetStudyState(section);
         if(state[section].mode === 'flash') renderFlash(section); else renderQuiz(section);
       }
