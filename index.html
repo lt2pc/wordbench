@@ -541,7 +541,20 @@
     text-align:center;
     color:var(--ink-soft);
     font-size:0.88rem;
+    transition: all 0.2s ease;
   }
+  .file-drop.has-file{
+    border:1.5px solid var(--marigold-deep);
+    background:rgba(232,163,61,0.10);
+  }
+  .file-drop-name{
+    font-family:'JetBrains Mono', monospace;
+    font-weight:600;
+    font-size:0.85rem;
+    color:var(--ink);
+    margin-top:10px;
+  }
+  .file-drop-name:empty{ display:none; }
 
   .status-msg{
     font-size:0.85rem;
@@ -739,15 +752,19 @@
       <select class="form-select" id="import-target-deck" onchange="tpImportTargetDeck[currentTpSection()] = this.value"></select>
 
       <div class="field-label">Upload a CSV file</div>
-      <div class="file-drop">
-        <input type="file" id="csv-file-input" accept=".csv,.txt" onchange="handleCsvUpload(event)">
+      <div class="file-drop" id="csv-drop">
+        <input type="file" id="csv-file-input" accept=".csv,.txt" onchange="handleCsvSelect(event)">
+        <div class="file-drop-name" id="csv-file-name"></div>
         <div class="field-hint" id="csv-format-hint" style="margin-top:10px;"></div>
+        <button class="ctrl-btn primary" id="csv-import-btn" style="display:none; margin-top:14px;" onclick="confirmCsvImport()">Import this file</button>
       </div>
 
       <div class="field-label">Or upload a Wordbench deck file (.json)</div>
-      <div class="file-drop">
-        <input type="file" id="json-file-input" accept=".json" onchange="handleJsonUpload(event)">
+      <div class="file-drop" id="json-drop">
+        <input type="file" id="json-file-input" accept=".json" onchange="handleJsonSelect(event)">
+        <div class="file-drop-name" id="json-file-name"></div>
         <div class="field-hint">Adds all words from a previously exported deck file into the selected deck above</div>
+        <button class="ctrl-btn primary" id="json-import-btn" style="display:none; margin-top:14px;" onclick="confirmJsonImport()">Import this file</button>
       </div>
 
       <div class="status-msg" id="import-status"></div>
@@ -1232,6 +1249,8 @@ function renderTeacherPanel(){
     : 'CSV columns: word, part of speech, meaning, example';
   document.getElementById('csv-format-hint').textContent = hint;
 
+  resetCsvDrop();
+  resetJsonDrop();
   clearStatus('add-status');
   clearStatus('import-status');
 }
@@ -1462,6 +1481,68 @@ function addWordFromForm(){
 }
 
 /* ---- CSV import ---- */
+/* ---- Pending file state (selected but not yet imported) ---- */
+let pendingCsvFile = null;
+let pendingJsonFile = null;
+
+function handleCsvSelect(evt){
+  const file = evt.target.files[0];
+  const drop = document.getElementById('csv-drop');
+  const nameEl = document.getElementById('csv-file-name');
+  const btn = document.getElementById('csv-import-btn');
+
+  if(!file){
+    pendingCsvFile = null;
+    drop.classList.remove('has-file');
+    nameEl.textContent = '';
+    btn.style.display = 'none';
+    return;
+  }
+
+  pendingCsvFile = file;
+  drop.classList.add('has-file');
+  nameEl.textContent = file.name;
+  btn.style.display = 'inline-block';
+  clearStatus('import-status');
+}
+
+function handleJsonSelect(evt){
+  const file = evt.target.files[0];
+  const drop = document.getElementById('json-drop');
+  const nameEl = document.getElementById('json-file-name');
+  const btn = document.getElementById('json-import-btn');
+
+  if(!file){
+    pendingJsonFile = null;
+    drop.classList.remove('has-file');
+    nameEl.textContent = '';
+    btn.style.display = 'none';
+    return;
+  }
+
+  pendingJsonFile = file;
+  drop.classList.add('has-file');
+  nameEl.textContent = file.name;
+  btn.style.display = 'inline-block';
+  clearStatus('import-status');
+}
+
+function resetCsvDrop(){
+  pendingCsvFile = null;
+  document.getElementById('csv-drop').classList.remove('has-file');
+  document.getElementById('csv-file-name').textContent = '';
+  document.getElementById('csv-import-btn').style.display = 'none';
+  document.getElementById('csv-file-input').value = '';
+}
+
+function resetJsonDrop(){
+  pendingJsonFile = null;
+  document.getElementById('json-drop').classList.remove('has-file');
+  document.getElementById('json-file-name').textContent = '';
+  document.getElementById('json-import-btn').style.display = 'none';
+  document.getElementById('json-file-input').value = '';
+}
+
 function parseCsvLine(line){
   // simple CSV split handling quoted commas
   const result = [];
@@ -1477,22 +1558,14 @@ function parseCsvLine(line){
   return result;
 }
 
-function handleCsvUpload(evt){
+function confirmCsvImport(){
   const section = currentTpSection();
   const targetDeckId = document.getElementById('import-target-deck').value;
-  const file = evt.target.files[0];
+  const file = pendingCsvFile;
   if(!file) return;
 
   if(!targetDeckId || !deckStore[section].decks[targetDeckId]){
     showStatus('import-status', 'There are no decks here. Create a deck first under "My decks".', false);
-    evt.target.value = '';
-    return;
-  }
-
-  const deckName = deckStore[section].decks[targetDeckId].name;
-  const proceed = confirm(`Import "${file.name}" into "${deckName}"?`);
-  if(!proceed){
-    evt.target.value = '';
     return;
   }
 
@@ -1540,32 +1613,24 @@ function handleCsvUpload(evt){
     }catch(err){
       showStatus('import-status', 'Could not read that file. Please check the CSV format and try again.', false);
     }
-    evt.target.value = '';
+    resetCsvDrop();
   };
   reader.onerror = function(){
     showStatus('import-status', 'Could not read that file.', false);
-    evt.target.value = '';
+    resetCsvDrop();
   };
   reader.readAsText(file);
 }
 
 /* ---- JSON deck import (from exported Wordbench deck files) ---- */
-function handleJsonUpload(evt){
+function confirmJsonImport(){
   const section = currentTpSection();
   const targetDeckId = document.getElementById('import-target-deck').value;
-  const file = evt.target.files[0];
+  const file = pendingJsonFile;
   if(!file) return;
 
   if(!targetDeckId || !deckStore[section].decks[targetDeckId]){
     showStatus('import-status', 'There are no decks here. Create a deck first under "My decks".', false);
-    evt.target.value = '';
-    return;
-  }
-
-  const deckName = deckStore[section].decks[targetDeckId].name;
-  const proceed = confirm(`Import "${file.name}" into "${deckName}"?`);
-  if(!proceed){
-    evt.target.value = '';
     return;
   }
 
@@ -1593,7 +1658,7 @@ function handleJsonUpload(evt){
     }catch(err){
       showStatus('import-status', 'Could not read that file. Make sure it is a valid Wordbench .json export.', false);
     }
-    evt.target.value = '';
+    resetJsonDrop();
   };
   reader.readAsText(file);
 }
