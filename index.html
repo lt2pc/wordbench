@@ -1043,16 +1043,24 @@ function isPublished(section, deckId){
   return publishedDeckIds(section).includes(deckId);
 }
 
+function visibleDeckIds(section){
+  const s = deckStore[section];
+  if(isTeacherMode()){
+    return Object.keys(s.decks); // teachers can browse every deck they've made
+  }
+  return publishedDeckIds(section); // students only see published decks
+}
+
 function activeDeck(section){
   const s = deckStore[section];
-  const pubIds = publishedDeckIds(section);
-  if(pubIds.length === 0) return null;
-  if(s.selectedDeckId && pubIds.includes(s.selectedDeckId)){
+  const visIds = visibleDeckIds(section);
+  if(visIds.length === 0) return null;
+  if(s.selectedDeckId && visIds.includes(s.selectedDeckId)){
     return s.decks[s.selectedDeckId];
   }
-  // fall back to the first published deck
-  s.selectedDeckId = pubIds[0];
-  return s.decks[pubIds[0]];
+  // fall back to the first visible deck
+  s.selectedDeckId = visIds[0];
+  return s.decks[visIds[0]];
 }
 
 function dataFor(section){
@@ -1105,9 +1113,9 @@ function setMode(section, mode){
 function refreshDeckSelect(section){
   const sel = document.getElementById(section+'-deck-select');
   const s = deckStore[section];
-  const pubIds = publishedDeckIds(section);
+  const visIds = visibleDeckIds(section);
 
-  if(pubIds.length === 0){
+  if(visIds.length === 0){
     sel.innerHTML = `<option value="">No decks</option>`;
     sel.disabled = true;
     document.getElementById(section+'-deck-count').textContent = 'There are no decks here.';
@@ -1115,16 +1123,19 @@ function refreshDeckSelect(section){
   }
 
   sel.disabled = false;
-  sel.innerHTML = pubIds.map(id =>
-    `<option value="${id}" ${id===s.selectedDeckId ? 'selected':''}>${escapeHtml(s.decks[id].name)}</option>`
-  ).join('');
+  sel.innerHTML = visIds.map(id => {
+    const label = escapeHtml(s.decks[id].name) + (isTeacherMode() && !isPublished(section, id) ? ' (unpublished)' : '');
+    return `<option value="${id}" ${id===s.selectedDeckId ? 'selected':''}>${label}</option>`;
+  }).join('');
   document.getElementById(section+'-deck-count').textContent =
     `${dataFor(section).length} card${dataFor(section).length===1?'':'s'}`;
 }
 
 function switchDeck(section, deckId){
   deckStore[section].selectedDeckId = deckId;
-  if(isTeacherMode()) saveDeckStore(section); // only teachers' deck choice needs to sync
+  // Note: which deck is "selected" is a local viewing choice for whoever's browsing
+  // (teacher or student) — it does not need to sync to the cloud. Only publish
+  // status (which decks exist/are visible) is shared.
   resetStudyState(section);
   refreshDeckSelect(section);
   if(state[section].mode === 'flash') renderFlash(section);
