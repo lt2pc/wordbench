@@ -912,11 +912,12 @@ function refreshAllUI(){
 
 function activeDeck(section){
   const s = deckStore[section];
-  return s.decks[s.activeDeckId] || Object.values(s.decks)[0];
+  return s.decks[s.activeDeckId] || Object.values(s.decks)[0] || null;
 }
 
 function dataFor(section){
-  return activeDeck(section).words;
+  const deck = activeDeck(section);
+  return deck ? deck.words : [];
 }
 
 /* ---------------- STUDY STATE ---------------- */
@@ -964,7 +965,17 @@ function setMode(section, mode){
 function refreshDeckSelect(section){
   const sel = document.getElementById(section+'-deck-select');
   const s = deckStore[section];
-  sel.innerHTML = Object.keys(s.decks).map(id =>
+  const deckIds = Object.keys(s.decks);
+
+  if(deckIds.length === 0){
+    sel.innerHTML = `<option value="">No decks</option>`;
+    sel.disabled = true;
+    document.getElementById(section+'-deck-count').textContent = 'There are no decks here.';
+    return;
+  }
+
+  sel.disabled = false;
+  sel.innerHTML = deckIds.map(id =>
     `<option value="${id}" ${id===s.activeDeckId ? 'selected':''}>${escapeHtml(s.decks[id].name)}</option>`
   ).join('');
   document.getElementById(section+'-deck-count').textContent =
@@ -988,8 +999,15 @@ function initOrder(section){
 }
 
 function renderFlash(section){
+  const deck = activeDeck(section);
   const data = dataFor(section);
   const area = document.getElementById(section+'-flash-area');
+
+  if(!deck){
+    area.innerHTML = `<div class="empty-state"><div class="big-label">There are no decks here.</div>Use Teacher tools to create a deck first.</div>`;
+    document.getElementById(section+'-progress').textContent = 'no decks';
+    return;
+  }
 
   if(data.length === 0){
     area.innerHTML = `<div class="empty-state"><div class="big-label">This deck is empty</div>Use Teacher tools to add some words first.</div>`;
@@ -1069,8 +1087,15 @@ function buildOptions(section, correctIdx){
 }
 
 function renderQuiz(section){
+  const deck = activeDeck(section);
   const data = dataFor(section);
   const area = document.getElementById(section+'-quiz-area');
+
+  if(!deck){
+    area.innerHTML = `<div class="empty-state"><div class="big-label">There are no decks here.</div>Use Teacher tools to create a deck first.</div>`;
+    document.getElementById(section+'-progress').textContent = 'no decks';
+    return;
+  }
 
   if(data.length < 2){
     area.innerHTML = `<div class="empty-state"><div class="big-label">Need at least 2 words</div>Add more words to this deck to enable quiz mode.</div>`;
@@ -1231,6 +1256,12 @@ function renderDeckList(section){
   const s = deckStore[section];
   const list = document.getElementById('deck-list');
   const deckIds = Object.keys(s.decks);
+
+  if(deckIds.length === 0){
+    list.innerHTML = `<div class="empty-state" style="padding:30px 20px;"><div class="big-label">There are no decks here.</div>Create a new deck above to get started.</div>`;
+    return;
+  }
+
   list.innerHTML = deckIds.map(id => {
     const deck = s.decks[id];
     const isActive = id === s.activeDeckId;
@@ -1328,17 +1359,14 @@ function createDeck(){
 
 function deleteDeck(section, deckId){
   const s = deckStore[section];
-  const deckIds = Object.keys(s.decks);
   if(!confirm(`Delete deck "${s.decks[deckId].name}"? This can't be undone unless you exported it.`)) return;
   delete s.decks[deckId];
 
-  // if that was the last deck, create a fresh empty one so the app always has something to show
-  if(Object.keys(s.decks).length === 0){
-    const newId = slugId();
-    s.decks[newId] = { name:'New deck', words:[] };
-    s.activeDeckId = newId;
+  const remainingIds = Object.keys(s.decks);
+  if(remainingIds.length === 0){
+    s.activeDeckId = null;
   } else if(s.activeDeckId === deckId){
-    s.activeDeckId = Object.keys(s.decks)[0];
+    s.activeDeckId = remainingIds[0];
   }
   resetStudyState(section);
 
@@ -1382,6 +1410,12 @@ function clearStatus(elId){
 function addWordFromForm(){
   const section = currentTpSection();
   const targetDeckId = document.getElementById('add-target-deck').value;
+
+  if(!targetDeckId || !deckStore[section].decks[targetDeckId]){
+    showStatus('add-status', 'There are no decks here. Create a deck first under "My decks".', false);
+    return;
+  }
+
   const meaning = document.getElementById('f-meaning').value.trim();
   const example = document.getElementById('f-example').value.trim();
 
@@ -1449,6 +1483,19 @@ function handleCsvUpload(evt){
   const file = evt.target.files[0];
   if(!file) return;
 
+  if(!targetDeckId || !deckStore[section].decks[targetDeckId]){
+    showStatus('import-status', 'There are no decks here. Create a deck first under "My decks".', false);
+    evt.target.value = '';
+    return;
+  }
+
+  const deckName = deckStore[section].decks[targetDeckId].name;
+  const proceed = confirm(`Import "${file.name}" into "${deckName}"?`);
+  if(!proceed){
+    evt.target.value = '';
+    return;
+  }
+
   const reader = new FileReader();
   reader.onload = function(e){
     try{
@@ -1508,6 +1555,19 @@ function handleJsonUpload(evt){
   const targetDeckId = document.getElementById('import-target-deck').value;
   const file = evt.target.files[0];
   if(!file) return;
+
+  if(!targetDeckId || !deckStore[section].decks[targetDeckId]){
+    showStatus('import-status', 'There are no decks here. Create a deck first under "My decks".', false);
+    evt.target.value = '';
+    return;
+  }
+
+  const deckName = deckStore[section].decks[targetDeckId].name;
+  const proceed = confirm(`Import "${file.name}" into "${deckName}"?`);
+  if(!proceed){
+    evt.target.value = '';
+    return;
+  }
 
   const reader = new FileReader();
   reader.onload = function(e){
