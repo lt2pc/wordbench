@@ -1419,6 +1419,11 @@ function showStatus(elId, msg, ok){
   el.textContent = msg;
   el.className = 'status-msg show ' + (ok ? 'ok' : 'err');
 }
+function showStatusHeadline(elId, headline, detail, ok){
+  const el = document.getElementById(elId);
+  el.innerHTML = `<strong>${escapeHtml(headline)}</strong><br>${escapeHtml(detail)}`;
+  el.className = 'status-msg show ' + (ok ? 'ok' : 'err');
+}
 function clearStatus(elId){
   const el = document.getElementById(elId);
   el.className = 'status-msg';
@@ -1609,7 +1614,7 @@ function confirmCsvImport(){
         if(state[section].mode === 'flash') renderFlash(section); else renderQuiz(section);
       }
 
-      showStatus('import-status', `Imported ${added} word${added===1?'':'s'}${skipped ? `, skipped ${skipped} incomplete row${skipped===1?'':'s'}` : ''}.`, true);
+      showStatusHeadline('import-status', 'Uploaded successfully!', `Imported ${added} word${added===1?'':'s'}${skipped ? `, skipped ${skipped} incomplete row${skipped===1?'':'s'}` : ''}.`, true);
     }catch(err){
       showStatus('import-status', 'Could not read that file. Please check the CSV format and try again.', false);
     }
@@ -1654,7 +1659,7 @@ function confirmJsonImport(){
         resetStudyState(section);
         if(state[section].mode === 'flash') renderFlash(section); else renderQuiz(section);
       }
-      showStatus('import-status', `Imported ${payload.words.length} word${payload.words.length===1?'':'s'} from "${payload.name || 'file'}".`, true);
+      showStatusHeadline('import-status', 'Uploaded successfully!', `Imported ${payload.words.length} word${payload.words.length===1?'':'s'} from "${payload.name || 'file'}".`, true);
     }catch(err){
       showStatus('import-status', 'Could not read that file. Make sure it is a valid Wordbench .json export.', false);
     }
