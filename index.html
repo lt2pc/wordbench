@@ -762,7 +762,7 @@
 </div> <!-- end app-shell -->
 
 <!-- TEACHER MODAL -->
-<div class="modal-overlay" id="teacher-modal">
+<div class="modal-overlay" id="teacher-modal" onclick="if(event.target === this) closeTeacherPanel()">
   <div class="modal-row">
     <div class="modal">
       <div class="modal-head">
@@ -1099,6 +1099,10 @@ function showSection(section){
   document.getElementById('tab-vc').setAttribute('aria-selected', section==='vc');
 }
 
+function currentActiveSection(){
+  return document.getElementById('pv-panel').classList.contains('active') ? 'pv' : 'vc';
+}
+
 function setMode(section, mode){
   state[section].mode = mode;
   document.getElementById(section+'-mode-flash').classList.toggle('active', mode==='flash');
@@ -1342,7 +1346,7 @@ let tpImportTargetDeck = {};
 
 function openTeacherPanel(){
   document.getElementById('teacher-modal').classList.add('open');
-  document.getElementById('tp-section-select').value = 'pv';
+  document.getElementById('tp-section-select').value = currentActiveSection();
   setTpTab('decks');
   renderTeacherPanel();
 }
