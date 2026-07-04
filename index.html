@@ -36,6 +36,29 @@
 
   ::selection{ background:var(--marigold); color:var(--ink); }
 
+  .toast{
+    position:fixed;
+    top:18px;
+    left:50%;
+    transform:translateX(-50%) translateY(-12px);
+    background:var(--sage);
+    color:#fff;
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:0.92rem;
+    padding:12px 24px;
+    border-radius:999px;
+    box-shadow:0 10px 30px rgba(27,36,48,0.25);
+    z-index:500;
+    opacity:0;
+    pointer-events:none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  .toast.show{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
+  }
+
   .skip-link{
     position:absolute; left:-999px; top:0;
     background:var(--ink); color:var(--paper); padding:10px 16px; z-index:100;
@@ -400,6 +423,15 @@
     overflow-y:auto;
   }
   .modal-overlay.open{ display:flex; }
+  .modal-row{
+    display:flex;
+    gap:20px;
+    align-items:flex-start;
+    max-width:900px;
+    width:100%;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
   .modal{
     background:var(--paper);
     border-radius:20px;
@@ -407,6 +439,10 @@
     width:100%;
     padding:32px;
     box-shadow:0 20px 60px rgba(0,0,0,0.3);
+  }
+  .published-panel{
+    max-width:280px;
+    flex:1 1 260px;
   }
   .modal-head{
     display:flex;
@@ -641,6 +677,8 @@
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
 
+<div class="toast" id="global-toast"></div>
+
 <!-- MODE GATE: shown before anything else -->
 <div class="modal-overlay open" id="mode-gate" style="background:var(--paper); align-items:center;">
   <div class="modal" style="max-width:420px; text-align:center;">
@@ -725,39 +763,36 @@
 
 <!-- TEACHER MODAL -->
 <div class="modal-overlay" id="teacher-modal">
-  <div class="modal">
-    <div class="modal-head">
-      <div class="modal-title">Teacher tools</div>
-      <button class="modal-close" onclick="closeTeacherPanel()" aria-label="Close">&times;</button>
-    </div>
-    <div class="modal-sub">create decks, add words, and back them up as files</div>
-
-    <div class="field-label">Editing section</div>
-    <select class="form-select" id="tp-section-select" onchange="renderTeacherPanel()">
-      <option value="pv">Phrasal verbs</option>
-      <option value="vc">Vocabulary</option>
-    </select>
-
-    <div class="tp-tabs">
-      <button class="tp-tab active" id="tp-tab-decks" onclick="setTpTab('decks')">My decks</button>
-      <button class="tp-tab" id="tp-tab-add" onclick="setTpTab('add')">Add a word</button>
-      <button class="tp-tab" id="tp-tab-import" onclick="setTpTab('import')">Import file</button>
-    </div>
-
-    <!-- DECKS LIST -->
-    <div class="tp-pane active" id="tp-pane-decks">
-      <div class="field-label" style="margin-top:0;">Visible to students right now</div>
-      <div id="published-summary-pv" class="published-summary" style="display:none;"></div>
-      <div id="published-summary-vc" class="published-summary" style="display:none;"></div>
-
-      <div class="field-label">New deck name</div>
-      <div style="display:flex; gap:8px;">
-        <input type="text" id="new-deck-name" placeholder="e.g. Unit 4 — Travel">
-        <button class="ctrl-btn primary" onclick="createDeck()">Create</button>
+  <div class="modal-row">
+    <div class="modal">
+      <div class="modal-head">
+        <div class="modal-title">Teacher tools</div>
+        <button class="modal-close" onclick="closeTeacherPanel()" aria-label="Close">&times;</button>
       </div>
-      <div class="field-label">Existing decks</div>
-      <div id="deck-list"></div>
-    </div>
+      <div class="modal-sub">create decks, add words, and back them up as files</div>
+
+      <div class="field-label">Editing section</div>
+      <select class="form-select" id="tp-section-select" onchange="renderTeacherPanel()">
+        <option value="pv">Phrasal verbs</option>
+        <option value="vc">Vocabulary</option>
+      </select>
+
+      <div class="tp-tabs">
+        <button class="tp-tab active" id="tp-tab-decks" onclick="setTpTab('decks')">My decks</button>
+        <button class="tp-tab" id="tp-tab-add" onclick="setTpTab('add')">Add a word</button>
+        <button class="tp-tab" id="tp-tab-import" onclick="setTpTab('import')">Import file</button>
+      </div>
+
+      <!-- DECKS LIST -->
+      <div class="tp-pane active" id="tp-pane-decks">
+        <div class="field-label" style="margin-top:0;">New deck name</div>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="new-deck-name" placeholder="e.g. Unit 4 — Travel">
+          <button class="ctrl-btn primary" onclick="createDeck()">Create</button>
+        </div>
+        <div class="field-label">Existing decks</div>
+        <div id="deck-list"></div>
+      </div>
 
     <!-- ADD WORD FORM -->
     <div class="tp-pane" id="tp-pane-add">
@@ -825,7 +860,22 @@
       <div class="status-msg" id="import-status"></div>
     </div>
 
-  </div>
+    </div> <!-- end main teacher modal -->
+
+    <div class="modal published-panel">
+      <div class="modal-head">
+        <div class="modal-title" style="font-size:1.2rem;">Visible to students</div>
+      </div>
+      <div class="modal-sub">decks currently published, per section</div>
+
+      <div class="field-label" style="margin-top:0;">Phrasal verbs</div>
+      <div id="published-summary-pv" class="published-summary"></div>
+
+      <div class="field-label">Vocabulary</div>
+      <div id="published-summary-vc" class="published-summary"></div>
+    </div>
+
+  </div> <!-- end modal-row -->
 </div>
 
 <script>
@@ -1349,7 +1399,7 @@ function renderDeckList(section){
   const list = document.getElementById('deck-list');
   const deckIds = Object.keys(s.decks);
 
-  renderPublishedSummary(section);
+  renderPublishedSummary();
 
   if(deckIds.length === 0){
     list.innerHTML = `<div class="empty-state" style="padding:30px 20px;"><div class="big-label">There are no decks here.</div>Create a new deck above to get started.</div>`;
@@ -1363,23 +1413,23 @@ function renderDeckList(section){
       const label = section === 'pv' ? `${w.verb} ${w.particle}` : w.word;
       return `<div class="word-row">
         <span class="word-row-label">${escapeHtml(label)} <span class="word-row-meaning">— ${escapeHtml(w.meaning)}</span></span>
-        <button class="icon-btn danger" onclick="deleteWord('${section}','${id}',${i})">Remove</button>
+        <button class="icon-btn danger" data-action="delete-word" data-word-index="${i}">Remove</button>
       </div>`;
     }).join('') || `<div class="word-row-empty">No words in this deck yet.</div>`;
 
     return `
-      <div class="deck-list-item deck-list-item-block">
-        <button class="deck-corner-x" onclick="deleteDeck('${section}','${id}')" aria-label="Delete deck" title="Delete deck">&times;</button>
+      <div class="deck-list-item deck-list-item-block" data-section="${section}" data-deck-id="${id}">
+        <button class="deck-corner-x" data-action="delete-deck" aria-label="Delete deck" title="Delete deck">&times;</button>
         <div class="deck-list-item-head">
           <div>
             <div class="name">${escapeHtml(deck.name)} ${published ? '<span style="color:var(--sage-deep); font-size:0.75rem;">● visible to students</span>' : ''}</div>
             <div class="meta">${deck.words.length} card${deck.words.length===1?'':'s'}</div>
           </div>
           <div class="deck-list-actions">
-            <button class="ctrl-btn ${published ? 'danger' : 'primary'}" style="padding:8px 14px; font-size:0.82rem;" onclick="toggleDeckPublish('${section}','${id}')">${published ? 'Deactivate' : 'Activate'}</button>
-            <button class="icon-btn" onclick="renameDeck('${section}','${id}')">Rename</button>
-            <button class="icon-btn" onclick="exportDeck('${section}','${id}')">Export</button>
-            <button class="icon-btn" onclick="toggleWordList('${section}-${id}')">Words ▾</button>
+            <button class="ctrl-btn ${published ? 'danger' : 'primary'}" style="padding:8px 14px; font-size:0.82rem;" data-action="toggle-publish">${published ? 'Deactivate' : 'Activate'}</button>
+            <button class="icon-btn" data-action="rename">Rename</button>
+            <button class="icon-btn" data-action="export">Export</button>
+            <button class="icon-btn" data-action="toggle-words">Words ▾</button>
           </div>
         </div>
         <div class="word-list" id="wordlist-${section}-${id}" style="display:none;">${wordsHtml}</div>
@@ -1387,31 +1437,63 @@ function renderDeckList(section){
   }).join('');
 }
 
-function renderPublishedSummary(section){
-  const pvEl = document.getElementById('published-summary-pv');
-  const vcEl = document.getElementById('published-summary-vc');
-  pvEl.style.display = section === 'pv' ? 'flex' : 'none';
-  vcEl.style.display = section === 'vc' ? 'flex' : 'none';
+// Single delegated listener handles every button inside the deck list,
+// avoiding any issues with special characters (quotes, apostrophes) in deck names
+// breaking inline onclick="..." strings.
+document.getElementById('deck-list').addEventListener('click', function(evt){
+  const btn = evt.target.closest('[data-action]');
+  if(!btn) return;
+  const card = evt.target.closest('.deck-list-item');
+  if(!card) return;
+  const section = card.getAttribute('data-section');
+  const deckId = card.getAttribute('data-deck-id');
+  const action = btn.getAttribute('data-action');
 
-  const el = document.getElementById('published-summary-'+section);
-  if(!el) return;
-  const s = deckStore[section];
-  const pubIds = publishedDeckIds(section);
-
-  if(pubIds.length === 0){
-    el.innerHTML = `<div class="published-empty">Nothing is visible to students yet. Activate a deck below.</div>`;
-    return;
+  if(action === 'delete-deck') deleteDeck(section, deckId);
+  else if(action === 'toggle-publish') toggleDeckPublish(section, deckId);
+  else if(action === 'rename') renameDeck(section, deckId);
+  else if(action === 'export') exportDeck(section, deckId);
+  else if(action === 'toggle-words') toggleWordList(section+'-'+deckId);
+  else if(action === 'delete-word'){
+    const wordIndex = parseInt(btn.getAttribute('data-word-index'), 10);
+    deleteWord(section, deckId, wordIndex);
   }
+});
 
-  el.innerHTML = pubIds.map(id => {
-    const deck = s.decks[id];
-    if(!deck) return '';
-    return `<div class="published-chip">
-      <span>${escapeHtml(deck.name)}</span>
-      <button class="icon-btn danger" onclick="removeFromPublished('${section}','${id}')">Remove</button>
-    </div>`;
-  }).join('');
+function renderPublishedSummary(){
+  ['pv','vc'].forEach(section => {
+    const el = document.getElementById('published-summary-'+section);
+    if(!el) return;
+    const s = deckStore[section];
+    const pubIds = publishedDeckIds(section);
+
+    if(pubIds.length === 0){
+      el.innerHTML = `<div class="published-empty">Nothing published yet.</div>`;
+      return;
+    }
+
+    el.innerHTML = pubIds.map(id => {
+      const deck = s.decks[id];
+      if(!deck) return '';
+      return `<div class="published-chip" data-section="${section}" data-deck-id="${id}">
+        <span>${escapeHtml(deck.name)}</span>
+        <button class="icon-btn danger" data-action="remove-published">Remove</button>
+      </div>`;
+    }).join('');
+  });
 }
+
+['published-summary-pv','published-summary-vc'].forEach(elId => {
+  const el = document.getElementById(elId);
+  if(!el) return;
+  el.addEventListener('click', function(evt){
+    const btn = evt.target.closest('[data-action="remove-published"]');
+    if(!btn) return;
+    const chip = evt.target.closest('.published-chip');
+    if(!chip) return;
+    removeFromPublished(chip.getAttribute('data-section'), chip.getAttribute('data-deck-id'));
+  });
+});
 
 function toggleDeckPublish(section, deckId){
   const s = deckStore[section];
@@ -1538,6 +1620,17 @@ function exportDeck(section, deckId){
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+let toastTimer = null;
+function showToast(message, duration){
+  const el = document.getElementById('global-toast');
+  clearTimeout(toastTimer);
+  el.textContent = message;
+  el.classList.add('show');
+  toastTimer = setTimeout(()=>{
+    el.classList.remove('show');
+  }, duration || 2500);
 }
 
 function showStatus(elId, msg, ok){
@@ -1740,7 +1833,8 @@ function confirmCsvImport(){
         if(state[section].mode === 'flash') renderFlash(section); else renderQuiz(section);
       }
 
-      showStatusHeadline('import-status', 'Uploaded successfully!', `Imported ${added} word${added===1?'':'s'}${skipped ? `, skipped ${skipped} incomplete row${skipped===1?'':'s'}` : ''}.`, true);
+      showToast('Uploaded successfully!', 2500);
+      clearStatus('import-status');
     }catch(err){
       showStatus('import-status', 'Could not read that file. Please check the CSV format and try again.', false);
     }
@@ -1785,7 +1879,8 @@ function confirmJsonImport(){
         resetStudyState(section);
         if(state[section].mode === 'flash') renderFlash(section); else renderQuiz(section);
       }
-      showStatusHeadline('import-status', 'Uploaded successfully!', `Imported ${payload.words.length} word${payload.words.length===1?'':'s'} from "${payload.name || 'file'}".`, true);
+      showToast('Uploaded successfully!', 2500);
+      clearStatus('import-status');
     }catch(err){
       showStatus('import-status', 'Could not read that file. Make sure it is a valid Wordbench .json export.', false);
     }
