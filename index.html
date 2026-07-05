@@ -80,18 +80,19 @@
 
   .theme-curtain{
     position:fixed;
-    inset:0;
+    top:0; bottom:0; left:0;
+    width:100%;
     z-index:9999;
     pointer-events:none;
-    clip-path: polygon(-10% -10%, -10% -10%, -10% -10%, -10% -10%);
+    transform:translateX(-100%);
   }
   .theme-curtain.sweeping{
-    clip-path: polygon(-10% -10%, 130% -10%, 130% 130%, -10% 130%);
-    transition: clip-path 0.6s cubic-bezier(.65,0,.35,1);
+    transform:translateX(0%);
+    transition: transform 0.5s cubic-bezier(.76,0,.24,1);
   }
   .theme-curtain.receding{
-    clip-path: polygon(130% -10%, 130% -10%, 130% 130%, 130% 130%);
-    transition: clip-path 0.6s cubic-bezier(.65,0,.35,1);
+    transform:translateX(100%);
+    transition: transform 0.5s cubic-bezier(.76,0,.24,1) 0.15s;
   }
 
   .skip-link{
@@ -458,7 +459,7 @@
     overflow-y:auto;
     opacity:0;
     pointer-events:none;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.45s ease;
   }
   .modal-overlay.open{
     opacity:1;
@@ -472,9 +473,9 @@
     width:100%;
     flex-wrap:wrap;
     justify-content:center;
-    transform:scale(0.94) translateY(10px);
+    transform:scale(0.85) translateY(40px);
     opacity:0;
-    transition: transform 0.28s cubic-bezier(.2,.9,.3,1.2), opacity 0.22s ease;
+    transition: transform 0.45s cubic-bezier(.34,1.4,.4,1), opacity 0.35s ease;
   }
   .modal-overlay.open .modal-row{
     transform:scale(1) translateY(0);
@@ -1395,10 +1396,21 @@ let tpAddTargetDeck = {};    // { pv: deckId, vc: deckId } - remembers selection
 let tpImportTargetDeck = {};
 
 function openTeacherPanel(){
-  document.getElementById('teacher-modal').classList.add('open');
+  const modal = document.getElementById('teacher-modal');
   document.getElementById('tp-section-select').value = currentActiveSection();
   setTpTab('decks');
   renderTeacherPanel();
+  // Ensure the browser paints the closed (opacity:0) state first, then
+  // triggers the transition on the next frame — otherwise the class add
+  // and the heavy DOM rewrite above can happen in the same paint and the
+  // transition gets skipped entirely.
+  modal.classList.remove('open');
+  void modal.offsetWidth;
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      modal.classList.add('open');
+    });
+  });
 }
 function closeTeacherPanel(){
   document.getElementById('teacher-modal').classList.remove('open');
@@ -2032,8 +2044,8 @@ function finishEnteringApp(){
 /* ---------------- DARK MODE ---------------- */
 const THEME_STORAGE_KEY = 'wordbench_theme_v1';
 const THEME_CURTAIN_COLORS = {
-  dark:  '#15111F',
-  light: '#FAF6ED'
+  dark:  'linear-gradient(180deg, #0B0815 0%, #15111F 60%, #1E1830 100%)',
+  light: 'linear-gradient(180deg, #FFF8ED 0%, #FAF6ED 60%, #F0EADA 100%)'
 };
 
 function applyTheme(theme){
@@ -2042,42 +2054,54 @@ function applyTheme(theme){
   if(btn) btn.textContent = theme === 'dark' ? '☀️ Light mode' : '🌙 Dark mode';
 }
 
+let themeTransitionInProgress = false;
+
 function toggleTheme(){
+  if(themeTransitionInProgress) return; // ignore rapid double-clicks mid-animation
   const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
   const next = current === 'dark' ? 'light' : 'dark';
   localStorage.setItem(THEME_STORAGE_KEY, next);
   sweepToTheme(next);
 }
 
-// Sweeps a diagonal curtain of the incoming theme's color across the screen,
-// swaps the actual theme underneath it mid-sweep, then fades the curtain away
-// to reveal the new theme already in place.
+// Slides an opaque panel fully across the screen (like night sliding over day),
+// swaps the real theme only once the panel is 100% covering everything
+// (confirmed via the actual transitionend event, not a guessed timeout so
+// there is never a frame where the new theme peeks through early), then
+// continues the panel's slide off the far side to reveal the new theme.
 function sweepToTheme(next){
+  themeTransitionInProgress = true;
   const curtain = document.getElementById('theme-curtain');
   curtain.style.background = THEME_CURTAIN_COLORS[next];
   curtain.classList.remove('sweeping', 'receding');
   void curtain.offsetWidth; // force reflow so the animation restarts cleanly
 
+  function onSweepInEnd(e){
+    if(e.propertyName !== 'transform') return;
+    curtain.removeEventListener('transitionend', onSweepInEnd);
+    applyTheme(next); // screen is fully covered right now — safe to swap with zero visible flash
+    requestAnimationFrame(()=>{
+      curtain.classList.remove('sweeping');
+      curtain.classList.add('receding');
+    });
+  }
+  curtain.addEventListener('transitionend', onSweepInEnd);
   curtain.classList.add('sweeping');
 
-  setTimeout(()=>{
-    applyTheme(next); // swap the real theme once curtain fully covers the screen
-    curtain.classList.remove('sweeping');
-    curtain.classList.add('receding');
-    setTimeout(()=>{
-      curtain.classList.remove('receding');
-    }, 650);
-  }, 600);
+  curtain.addEventListener('transitionend', function onSweepOutEnd(e){
+    if(e.propertyName !== 'transform') return;
+    curtain.removeEventListener('transitionend', onSweepOutEnd);
+    curtain.classList.remove('receding');
+    themeTransitionInProgress = false;
+  });
 }
 
 function initTheme(){
   const saved = localStorage.getItem(THEME_STORAGE_KEY);
   if(saved === 'dark' || saved === 'light'){
-    applyTheme(saved);
+    applyTheme(saved); // respect whatever the person chose previously — persists indefinitely
   } else {
-    // default to the visitor's system preference if they haven't chosen yet
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    applyTheme(prefersDark ? 'dark' : 'light');
+    applyTheme('light'); // new visitors always start on light mode
   }
 }
 
