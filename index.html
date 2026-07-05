@@ -2076,24 +2076,41 @@ function sweepToTheme(next){
   curtain.classList.remove('sweeping', 'receding');
   void curtain.offsetWidth; // force reflow so the animation restarts cleanly
 
-  function onSweepInEnd(e){
-    if(e.propertyName !== 'transform') return;
+  let sweepInDone = false;
+
+  function finishSweepIn(){
+    if(sweepInDone) return;
+    sweepInDone = true;
     curtain.removeEventListener('transitionend', onSweepInEnd);
     applyTheme(next); // screen is fully covered right now — safe to swap with zero visible flash
+
+    let sweepOutDone = false;
+    function finishSweepOut(){
+      if(sweepOutDone) return;
+      sweepOutDone = true;
+      curtain.removeEventListener('transitionend', onSweepOutEnd);
+      curtain.classList.remove('receding');
+      themeTransitionInProgress = false;
+    }
+    function onSweepOutEnd(e2){
+      if(e2.propertyName !== 'transform') return;
+      finishSweepOut();
+    }
+    curtain.addEventListener('transitionend', onSweepOutEnd);
+    setTimeout(finishSweepOut, 700); // safety net if the transition never fires (e.g. reduced motion)
+
     requestAnimationFrame(()=>{
       curtain.classList.remove('sweeping');
       curtain.classList.add('receding');
     });
   }
-  curtain.addEventListener('transitionend', onSweepInEnd);
-  curtain.classList.add('sweeping');
-
-  curtain.addEventListener('transitionend', function onSweepOutEnd(e){
+  function onSweepInEnd(e){
     if(e.propertyName !== 'transform') return;
-    curtain.removeEventListener('transitionend', onSweepOutEnd);
-    curtain.classList.remove('receding');
-    themeTransitionInProgress = false;
-  });
+    finishSweepIn();
+  }
+  curtain.addEventListener('transitionend', onSweepInEnd);
+  setTimeout(finishSweepIn, 700); // safety net if the transition never fires (e.g. reduced motion)
+  curtain.classList.add('sweeping');
 }
 
 function initTheme(){
