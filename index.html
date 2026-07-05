@@ -10,33 +10,67 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
   :root{
-    --ink:#1B2430;
-    --ink-soft:#39465A;
-    --paper:#FAF6ED;
-    --paper-dim:#F0EADA;
-    --marigold:#E8A33D;
-    --marigold-deep:#C97F1F;
-    --sage:#7C9885;
-    --sage-deep:#5F7A67;
-    --clay:#C4634F;
-    --clay-deep:#A64C3A;
-    --line:rgba(27,36,48,0.12);
-    --shadow: 0 8px 24px rgba(27,36,48,0.10);
+    --ink:#1A1625;
+    --ink-soft:#5C5470;
+    --paper:#FFFBF2;
+    --paper-dim:#FFF3DC;
+
+    /* Phrasal verbs — coral/orange family: high arousal, action-oriented (Mars energy) */
+    --pv-primary:#FF5A3C;
+    --pv-primary-deep:#E6431F;
+    --pv-accent:#FF8A3D;
+
+    /* Vocabulary — electric blue/violet family: associated with focus & retention */
+    --vc-primary:#5B4FE8;
+    --vc-primary-deep:#4335D6;
+    --vc-accent:#8B5CF6;
+
+    /* Shared accents */
+    --success:#8BD450;
+    --success-deep:#65B32E;
+    --danger:#FF4D6D;
+    --danger-deep:#E0304F;
+
+    /* Legacy aliases kept for anything not yet re-themed */
+    --marigold:#FF8A3D;
+    --marigold-deep:#E6431F;
+    --sage:#8BD450;
+    --sage-deep:#65B32E;
+    --clay:#FF4D6D;
+    --clay-deep:#E0304F;
+
+    --line:rgba(26,22,37,0.14);
+    --shadow: 0 8px 28px rgba(26,22,37,0.14);
   }
 
   [data-theme="dark"]{
-    --ink:#F4EDE4;
-    --ink-soft:#A79FB8;
-    --paper:#15111F;
-    --paper-dim:#1E1830;
-    --marigold:#F2A65A;
-    --marigold-deep:#F2A65A;
-    --sage:#7FCBA4;
-    --sage-deep:#7FCBA4;
-    --clay:#E8836B;
-    --clay-deep:#E8836B;
-    --line:rgba(244,237,228,0.12);
-    --shadow: 0 12px 32px rgba(0,0,0,0.5);
+    --ink:#F5F1FF;
+    --ink-soft:#B8AFD9;
+    --paper:#120E1E;
+    --paper-dim:#1C1630;
+
+    --pv-primary:#FF7A5C;
+    --pv-primary-deep:#FF7A5C;
+    --pv-accent:#FFA85C;
+
+    --vc-primary:#8B7FFF;
+    --vc-primary-deep:#8B7FFF;
+    --vc-accent:#B08BFF;
+
+    --success:#A3E86B;
+    --success-deep:#A3E86B;
+    --danger:#FF6B85;
+    --danger-deep:#FF6B85;
+
+    --marigold:#FFA85C;
+    --marigold-deep:#FFA85C;
+    --sage:#A3E86B;
+    --sage-deep:#A3E86B;
+    --clay:#FF6B85;
+    --clay-deep:#FF6B85;
+
+    --line:rgba(245,241,255,0.14);
+    --shadow: 0 12px 36px rgba(0,0,0,0.55);
   }
 
   *{
@@ -47,10 +81,17 @@
   html{scroll-behavior:smooth;}
   body{
     margin:0;
-    background:var(--paper);
+    background:
+      radial-gradient(circle at 8% 12%, rgba(255,90,60,0.16) 0%, transparent 45%),
+      radial-gradient(circle at 92% 18%, rgba(91,79,232,0.16) 0%, transparent 45%),
+      radial-gradient(circle at 15% 85%, rgba(139,212,80,0.14) 0%, transparent 40%),
+      radial-gradient(circle at 88% 92%, rgba(255,77,109,0.12) 0%, transparent 40%),
+      var(--paper);
+    background-attachment: fixed;
     color:var(--ink);
     font-family:'Inter', sans-serif;
     -webkit-font-smoothing:antialiased;
+    min-height:100vh;
   }
 
   ::selection{ background:var(--marigold); color:var(--ink); }
@@ -59,23 +100,23 @@
     position:fixed;
     top:18px;
     left:50%;
-    transform:translateX(-50%) translateY(-12px);
-    background:var(--sage);
+    transform:translateX(-50%) translateY(-16px) scale(0.9);
+    background: linear-gradient(135deg, var(--success), var(--success-deep));
     color:#fff;
     font-family:'Inter', sans-serif;
-    font-weight:600;
+    font-weight:700;
     font-size:0.92rem;
-    padding:12px 24px;
+    padding:13px 26px;
     border-radius:999px;
-    box-shadow:0 10px 30px rgba(27,36,48,0.25);
+    box-shadow:0 12px 32px rgba(139,212,80,0.4);
     z-index:500;
     opacity:0;
     pointer-events:none;
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: opacity 0.3s ease, transform 0.35s cubic-bezier(.34,1.56,.64,1);
   }
   .toast.show{
     opacity:1;
-    transform:translateX(-50%) translateY(0);
+    transform:translateX(-50%) translateY(0) scale(1);
   }
 
   .skip-link{
@@ -97,10 +138,23 @@
   .brand{
     font-family:'Fraunces', serif;
     font-weight:700;
-    font-size:1.6rem;
+    font-size:1.9rem;
     letter-spacing:-0.01em;
+    background: linear-gradient(100deg, var(--pv-primary) 0%, var(--vc-primary) 60%, var(--pv-primary) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 200% auto;
+    animation: brandShimmer 6s ease-in-out infinite;
   }
-  .brand .dot{ color:var(--marigold-deep); }
+  @keyframes brandShimmer{
+    0%,100%{ background-position: 0% center; }
+    50%{ background-position: 100% center; }
+  }
+  .brand .dot{
+    color:var(--pv-primary-deep);
+    -webkit-text-fill-color: var(--pv-primary-deep);
+  }
   .tagline{
     font-family:'JetBrains Mono', monospace;
     font-size:0.78rem;
@@ -130,19 +184,31 @@
   }
   .tab{
     font-family:'Inter', sans-serif;
-    font-weight:600;
-    font-size:0.95rem;
-    padding:10px 18px;
+    font-weight:700;
+    font-size:1rem;
+    padding:12px 24px;
     border-radius:999px;
-    border:1.5px solid var(--line);
+    border:2px solid var(--line);
     background:transparent;
     color:var(--ink-soft);
     cursor:pointer;
-    transition: all 0.18s ease;
+    transition: all 0.22s cubic-bezier(.34,1.56,.64,1);
   }
-  .tab:hover{ border-color: var(--ink); color:var(--ink); }
-  .tab[aria-selected="true"].pv{ background:var(--marigold); border-color:var(--marigold-deep); color:var(--ink); }
-  .tab[aria-selected="true"].vc{ background:var(--clay); border-color:var(--clay-deep); color:var(--paper); }
+  .tab:hover{ border-color: var(--ink); color:var(--ink); transform:translateY(-2px); }
+  .tab[aria-selected="true"].pv{
+    background: linear-gradient(135deg, var(--pv-primary), var(--pv-accent));
+    border-color:var(--pv-primary-deep);
+    color:#fff;
+    transform:scale(1.06);
+    box-shadow: 0 8px 24px rgba(255,90,60,0.4);
+  }
+  .tab[aria-selected="true"].vc{
+    background: linear-gradient(135deg, var(--vc-primary), var(--vc-accent));
+    border-color:var(--vc-primary-deep);
+    color:#fff;
+    transform:scale(1.06);
+    box-shadow: 0 8px 24px rgba(91,79,232,0.4);
+  }
 
   main{
     max-width:1000px;
@@ -196,16 +262,18 @@
   }
   .mode-btn{
     font-family:'Inter', sans-serif;
-    font-weight:600;
+    font-weight:700;
     font-size:0.88rem;
-    padding:8px 16px;
+    padding:9px 18px;
     border-radius:999px;
     border:none;
     background:transparent;
     color:var(--ink-soft);
     cursor:pointer;
+    transition: all 0.2s ease;
   }
-  .mode-btn.active{ background:var(--ink); color:var(--paper); }
+  #pv-panel .mode-btn.active{ background: linear-gradient(135deg, var(--pv-primary), var(--pv-accent)); color:#fff; box-shadow: 0 4px 14px rgba(255,90,60,0.35); }
+  #vc-panel .mode-btn.active{ background: linear-gradient(135deg, var(--vc-primary), var(--vc-accent)); color:#fff; box-shadow: 0 4px 14px rgba(91,79,232,0.35); }
 
   .progress-tag{
     font-family:'JetBrains Mono', monospace;
@@ -241,7 +309,9 @@
     height:300px;
     perspective:1400px;
     cursor:pointer;
+    transition: transform 0.25s ease;
   }
+  .flip-card:hover{ transform: translateY(-4px) scale(1.01); }
   .flip-inner{
     position:relative;
     width:100%; height:100%;
@@ -252,8 +322,8 @@
   .face{
     position:absolute; inset:0;
     backface-visibility:hidden;
-    border-radius:20px;
-    border:1.5px solid var(--line);
+    border-radius:28px;
+    border:3px solid var(--line);
     display:flex;
     flex-direction:column;
     align-items:center;
@@ -262,29 +332,39 @@
     text-align:center;
     box-shadow:var(--shadow);
   }
-  .face.front{ background:var(--paper); }
-  .face.back{ transform: rotateY(180deg); }
-  #pv-panel .face.back{ background:var(--ink); color:var(--paper); }
-  #vc-panel .face.back{ background:var(--clay); color:var(--paper); }
+  #pv-panel .face.front{ background:var(--paper); border-color: rgba(255,90,60,0.35); }
+  #vc-panel .face.front{ background:var(--paper); border-color: rgba(91,79,232,0.35); }
+  .face.back{ transform: rotateY(180deg); border:none; }
+  #pv-panel .face.back{
+    background: linear-gradient(135deg, var(--pv-primary) 0%, var(--pv-accent) 100%);
+    color:#fff;
+    box-shadow: 0 20px 50px rgba(255,90,60,0.45);
+  }
+  #vc-panel .face.back{
+    background: linear-gradient(135deg, var(--vc-primary) 0%, var(--vc-accent) 100%);
+    color:#fff;
+    box-shadow: 0 20px 50px rgba(91,79,232,0.45);
+  }
 
   .combo{
     display:flex;
     align-items:center;
-    gap:10px;
+    gap:12px;
     font-family:'Fraunces', serif;
-    font-weight:600;
-    font-size:2.1rem;
+    font-weight:700;
+    font-size:2.4rem;
   }
   .combo .verb{ color:var(--ink); }
   .combo .join{
-    color:var(--marigold-deep);
+    color:var(--pv-primary-deep);
     font-family:'JetBrains Mono', monospace;
-    font-size:1.1rem;
-    opacity:0.8;
+    font-size:1.2rem;
+    opacity:0.85;
   }
   .combo .particle{
-    color:var(--marigold-deep);
-    border-bottom:3px solid var(--marigold);
+    color:var(--pv-primary-deep);
+    border-bottom:4px solid var(--pv-primary);
+    text-shadow: 0 0 20px rgba(255,90,60,0.3);
   }
   .flip-card.flipped .combo{ transform: scale(0.001); transition: transform 0.01s; }
 
@@ -297,7 +377,7 @@
   .pos-tag{
     font-family:'JetBrains Mono', monospace;
     font-size:0.75rem;
-    color:var(--clay-deep);
+    color:var(--vc-primary-deep);
     text-transform:uppercase;
     letter-spacing:0.06em;
     margin-top:8px;
@@ -332,23 +412,32 @@
   }
   .ctrl-btn{
     font-family:'Inter', sans-serif;
-    font-weight:600;
+    font-weight:700;
     font-size:0.9rem;
-    padding:10px 20px;
-    border-radius:12px;
-    border:1.5px solid var(--ink);
+    padding:11px 22px;
+    border-radius:14px;
+    border:2px solid var(--ink);
     background:var(--paper);
     color:var(--ink);
     cursor:pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s cubic-bezier(.34,1.56,.64,1);
   }
-  .ctrl-btn:hover{ background:var(--ink); color:var(--paper); }
-  .ctrl-btn.primary{ background:var(--marigold); border-color:var(--marigold-deep); }
-  .ctrl-btn.primary:hover{ background:var(--marigold-deep); color:var(--paper); }
+  .ctrl-btn:hover{ background:var(--ink); color:var(--paper); transform:translateY(-2px) scale(1.03); }
+  .ctrl-btn.primary{
+    background: linear-gradient(135deg, var(--pv-primary), var(--pv-accent));
+    border-color:var(--pv-primary-deep);
+    color:#fff;
+    box-shadow: 0 6px 18px rgba(255,90,60,0.35);
+  }
+  .ctrl-btn.primary:hover{
+    background: linear-gradient(135deg, var(--pv-primary-deep), var(--pv-primary));
+    color:#fff;
+    box-shadow: 0 10px 26px rgba(255,90,60,0.5);
+  }
   .ctrl-btn.danger{ border-color:var(--clay-deep); color:var(--clay-deep); }
-  .ctrl-btn.danger:hover{ background:var(--clay-deep); color:var(--paper); }
+  .ctrl-btn.danger:hover{ background:var(--clay-deep); color:#fff; box-shadow: 0 8px 20px rgba(255,77,109,0.4); }
   .ctrl-btn:focus-visible, .tab:focus-visible, .mode-btn:focus-visible, .quiz-opt:focus-visible, .deck-select:focus-visible{
-    outline:3px solid var(--marigold-deep);
+    outline:3px solid var(--pv-primary-deep);
     outline-offset:2px;
   }
 
@@ -356,11 +445,15 @@
   .quiz-wrap{ max-width:600px; margin:0 auto; }
   .quiz-question{
     background:var(--paper-dim);
-    border:1.5px solid var(--line);
-    border-radius:18px;
+    border:2px solid var(--line);
+    border-radius:24px;
     padding:28px;
     margin-bottom:20px;
+    position:relative;
+    overflow:hidden;
   }
+  #pv-panel .quiz-question{ border-color: rgba(255,90,60,0.3); box-shadow: 0 8px 30px rgba(255,90,60,0.12); }
+  #vc-panel .quiz-question{ border-color: rgba(91,79,232,0.3); box-shadow: 0 8px 30px rgba(91,79,232,0.12); }
   .quiz-prompt-label{
     font-family:'JetBrains Mono', monospace;
     font-size:0.75rem;
@@ -384,17 +477,28 @@
     text-align:left;
     font-family:'Inter', sans-serif;
     font-size:1rem;
-    font-weight:500;
-    padding:14px 18px;
-    border-radius:12px;
-    border:1.5px solid var(--line);
+    font-weight:600;
+    padding:15px 20px;
+    border-radius:14px;
+    border:2px solid var(--line);
     background:var(--paper);
     cursor:pointer;
-    transition: all 0.15s ease;
+    transition: all 0.18s cubic-bezier(.34,1.56,.64,1);
   }
-  .quiz-opt:hover{ border-color: var(--ink); }
-  .quiz-opt.correct{ background:var(--sage); border-color:var(--sage-deep); color:#fff; }
-  .quiz-opt.incorrect{ background:var(--clay); border-color:var(--clay-deep); color:#fff; }
+  .quiz-opt:hover{ border-color: var(--ink); transform:translateX(4px); }
+  .quiz-opt.correct{
+    background: linear-gradient(135deg, var(--success), var(--success-deep));
+    border-color:var(--success-deep);
+    color:#fff;
+    transform:scale(1.02);
+    box-shadow: 0 8px 22px rgba(139,212,80,0.4);
+  }
+  .quiz-opt.incorrect{
+    background: linear-gradient(135deg, var(--danger), var(--danger-deep));
+    border-color:var(--danger-deep);
+    color:#fff;
+    box-shadow: 0 8px 22px rgba(255,77,109,0.35);
+  }
   .quiz-opt[disabled]{ cursor:default; }
 
   .quiz-footer{
@@ -416,8 +520,18 @@
   .quiz-done .big{
     font-family:'Fraunces', serif;
     font-weight:700;
-    font-size:2.6rem;
-    color:var(--marigold-deep);
+    font-size:3.4rem;
+    background: linear-gradient(135deg, var(--pv-primary), var(--vc-primary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display:inline-block;
+    animation: scorePopIn 0.5s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes scorePopIn{
+    0%{ transform: scale(0.3); opacity:0; }
+    60%{ transform: scale(1.15); opacity:1; }
+    100%{ transform: scale(1); }
   }
 
   footer{
@@ -466,11 +580,13 @@
   }
   .modal{
     background:var(--paper);
-    border-radius:20px;
+    border-radius:24px;
     max-width:640px;
     flex:1 1 500px;
     padding:32px;
-    box-shadow:0 20px 60px rgba(0,0,0,0.3);
+    box-shadow:0 24px 70px rgba(0,0,0,0.35);
+    border-top: 5px solid transparent;
+    border-image: linear-gradient(90deg, var(--pv-primary), var(--vc-primary)) 1;
   }
   .published-panel{
     max-width:280px;
@@ -580,7 +696,7 @@
     align-items:center;
     justify-content:center;
   }
-  .deck-corner-x:hover{ border-color:var(--clay-deep); color:var(--clay-deep); background:rgba(196,99,79,0.1); }
+  .deck-corner-x:hover{ border-color:var(--clay-deep); color:var(--clay-deep); background:rgba(255,77,109,0.12); }
   .deck-list-item-head{
     display:flex;
     align-items:center;
@@ -602,7 +718,7 @@
     display:flex;
     align-items:center;
     gap:8px;
-    background:rgba(124,152,133,0.15);
+    background:rgba(139,212,80,0.18);
     border:1.5px solid var(--sage-deep);
     color:var(--sage-deep);
     border-radius:999px;
@@ -626,6 +742,7 @@
   .word-list{
     margin-top:12px;
     padding-top:12px;
+    padding-right:14px;
     border-top:1px solid var(--line);
     max-height:220px;
     overflow-y:auto;
@@ -641,6 +758,32 @@
   .word-row-label{ font-weight:600; }
   .word-row-meaning{ font-weight:400; color:var(--ink-soft); }
   .word-row-empty{ font-size:0.82rem; color:var(--ink-soft); opacity:0.7; padding:6px 0; }
+  .word-row-actions{ display:flex; gap:6px; flex-shrink:0; }
+
+  .word-edit-form{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    width:100%;
+    padding:10px 0;
+  }
+  .edit-field-row2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+  .edit-input{
+    width:100%;
+    font-family:'Inter', sans-serif;
+    font-size:0.85rem;
+    padding:8px 10px;
+    border-radius:8px;
+    border:1.5px solid var(--line);
+    background:var(--paper-dim);
+    color:var(--ink);
+  }
+  .edit-input:focus{ outline:none; border-color:var(--marigold-deep); }
+  .word-edit-actions{ display:flex; gap:8px; }
   .icon-btn{
     background:none;
     border:1.5px solid var(--line);
@@ -664,7 +807,7 @@
   }
   .file-drop.has-file{
     border:1.5px solid var(--marigold-deep);
-    background:rgba(232,163,61,0.10);
+    background:rgba(255,138,61,0.14);
   }
   .file-drop-name{
     font-family:'JetBrains Mono', monospace;
@@ -683,8 +826,8 @@
     display:none;
   }
   .status-msg.show{ display:block; }
-  .status-msg.ok{ background:rgba(124,152,133,0.18); color:var(--sage-deep); }
-  .status-msg.err{ background:rgba(196,99,79,0.15); color:var(--clay-deep); }
+  .status-msg.ok{ background:rgba(139,212,80,0.18); color:var(--success-deep); }
+  .status-msg.err{ background:rgba(255,77,109,0.15); color:var(--danger-deep); }
 
   .modal-actions{
     display:flex;
@@ -723,7 +866,7 @@
     <div class="modal-sub" style="margin-bottom:28px;">who's using the site right now?</div>
     <div style="display:flex; flex-direction:column; gap:12px;">
       <button class="ctrl-btn primary" style="padding:16px; font-size:1rem;" onclick="enterAsStudent()">I'm a student</button>
-      <button class="ctrl-btn" style="padding:16px; font-size:1rem;" onclick="showTeacherLogin()">I'm the teacher</button>
+      <button class="ctrl-btn" style="padding:16px; font-size:1rem; background:linear-gradient(135deg, var(--vc-primary), var(--vc-accent)); border-color:var(--vc-primary-deep); color:#fff; box-shadow:0 6px 18px rgba(91,79,232,0.35);" onclick="showTeacherLogin()">I'm the teacher</button>
     </div>
     <div id="teacher-login-box" style="display:none; margin-top:20px; text-align:left;">
       <div class="field-label">Teacher password</div>
@@ -1475,9 +1618,12 @@ function renderDeckList(section){
     const published = isPublished(section, id);
     const wordsHtml = deck.words.map((w, i) => {
       const label = section === 'pv' ? `${w.verb} ${w.particle}` : w.word;
-      return `<div class="word-row">
+      return `<div class="word-row" data-word-index="${i}">
         <span class="word-row-label">${escapeHtml(label)} <span class="word-row-meaning">— ${escapeHtml(w.meaning)}</span></span>
-        <button class="icon-btn danger" data-action="delete-word" data-word-index="${i}">Remove</button>
+        <span class="word-row-actions">
+          <button class="icon-btn" data-action="edit-word" data-word-index="${i}">Edit</button>
+          <button class="icon-btn danger" data-action="delete-word" data-word-index="${i}">Remove</button>
+        </span>
       </div>`;
     }).join('') || `<div class="word-row-empty">No words in this deck yet.</div>`;
 
@@ -1521,6 +1667,17 @@ document.getElementById('deck-list').addEventListener('click', function(evt){
   else if(action === 'delete-word'){
     const wordIndex = parseInt(btn.getAttribute('data-word-index'), 10);
     deleteWord(section, deckId, wordIndex);
+  }
+  else if(action === 'edit-word'){
+    const wordIndex = parseInt(btn.getAttribute('data-word-index'), 10);
+    openEditWordForm(section, deckId, wordIndex);
+  }
+  else if(action === 'save-word-edit'){
+    const wordIndex = parseInt(btn.getAttribute('data-word-index'), 10);
+    saveWordEdit(section, deckId, wordIndex);
+  }
+  else if(action === 'cancel-word-edit'){
+    renderDeckList(section); // just re-render to discard the open edit form
   }
 });
 
@@ -1590,6 +1747,103 @@ function toggleWordList(key){
   const el = document.getElementById('wordlist-'+key);
   if(!el) return;
   el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+// Replaces a single word row with an inline editable form so the teacher can
+// fix a typo or update a definition without deleting and re-adding the word.
+function openEditWordForm(section, deckId, wordIndex){
+  const deck = deckStore[section].decks[deckId];
+  if(!deck || !deck.words[wordIndex]) return;
+  const w = deck.words[wordIndex];
+
+  const rowEl = document.querySelector(
+    `.deck-list-item[data-deck-id="${cssEscape(deckId)}"] .word-row[data-word-index="${wordIndex}"]`
+  );
+  if(!rowEl) return;
+
+  let fieldsHtml;
+  if(section === 'pv'){
+    fieldsHtml = `
+      <div class="edit-field-row2">
+        <input type="text" class="edit-input" data-field="verb" value="${escapeHtml(w.verb)}" placeholder="Verb">
+        <input type="text" class="edit-input" data-field="particle" value="${escapeHtml(w.particle)}" placeholder="Particle">
+      </div>`;
+  } else {
+    fieldsHtml = `
+      <div class="edit-field-row2">
+        <input type="text" class="edit-input" data-field="word" value="${escapeHtml(w.word)}" placeholder="Word">
+        <input type="text" class="edit-input" data-field="pos" value="${escapeHtml(w.pos||'')}" placeholder="Part of speech">
+      </div>`;
+  }
+
+  rowEl.innerHTML = `
+    <div class="word-edit-form">
+      ${fieldsHtml}
+      <input type="text" class="edit-input" data-field="meaning" value="${escapeHtml(w.meaning)}" placeholder="Meaning">
+      <input type="text" class="edit-input" data-field="example" value="${escapeHtml(w.example||'')}" placeholder="Example sentence">
+      <div class="word-edit-actions">
+        <button class="ctrl-btn primary" style="padding:7px 14px; font-size:0.82rem;" data-action="save-word-edit" data-word-index="${wordIndex}">Save</button>
+        <button class="icon-btn" data-action="cancel-word-edit">Cancel</button>
+      </div>
+    </div>`;
+}
+
+function saveWordEdit(section, deckId, wordIndex){
+  const deck = deckStore[section].decks[deckId];
+  if(!deck || !deck.words[wordIndex]) return;
+
+  const rowEl = document.querySelector(
+    `.deck-list-item[data-deck-id="${cssEscape(deckId)}"] .word-row[data-word-index="${wordIndex}"]`
+  );
+  if(!rowEl) return;
+
+  const inputs = rowEl.querySelectorAll('.edit-input');
+  const values = {};
+  inputs.forEach(inp => { values[inp.getAttribute('data-field')] = inp.value.trim(); });
+
+  if(!values.meaning){
+    alert('Please fill in a meaning before saving.');
+    return;
+  }
+
+  if(section === 'pv'){
+    if(!values.verb || !values.particle){
+      alert('Please fill in both the verb and the particle.');
+      return;
+    }
+    deck.words[wordIndex] = {
+      verb: values.verb,
+      particle: values.particle,
+      meaning: values.meaning,
+      example: values.example || `${values.verb} ${values.particle}.`
+    };
+  } else {
+    if(!values.word){
+      alert('Please fill in the word.');
+      return;
+    }
+    deck.words[wordIndex] = {
+      word: values.word,
+      pos: values.pos || '',
+      meaning: values.meaning,
+      example: values.example || values.word
+    };
+  }
+
+  saveDeckStore(section);
+  renderDeckList(section);
+  refreshDeckSelect(section);
+  if(deckStore[section].selectedDeckId === deckId){
+    resetStudyState(section);
+    if(state[section].mode === 'flash') renderFlash(section); else renderQuiz(section);
+  }
+  showToast('Word updated!', 2000);
+}
+
+// Minimal CSS.escape polyfill-ish helper for building attribute selectors safely
+// from deck IDs that are always our own generated slugs, but kept defensive.
+function cssEscape(str){
+  return String(str).replace(/["\\]/g, '\\$&');
 }
 
 function deleteWord(section, deckId, wordIndex){
