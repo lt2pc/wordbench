@@ -39,8 +39,8 @@
     --shadow: 0 12px 32px rgba(0,0,0,0.5);
   }
 
-  body, .modal, .flip-card .face, .quiz-question, .quiz-opt, .deck-select, input[type="text"], select.form-select, textarea{
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  *{
+    transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
   }
 
   *{box-sizing:border-box;}
@@ -76,23 +76,6 @@
   .toast.show{
     opacity:1;
     transform:translateX(-50%) translateY(0);
-  }
-
-  .theme-curtain{
-    position:fixed;
-    top:0; bottom:0; left:0;
-    width:100%;
-    z-index:9999;
-    pointer-events:none;
-    transform:translateX(-100%);
-  }
-  .theme-curtain.sweeping{
-    transform:translateX(0%);
-    transition: transform 0.5s cubic-bezier(.76,0,.24,1);
-  }
-  .theme-curtain.receding{
-    transform:translateX(100%);
-    transition: transform 0.5s cubic-bezier(.76,0,.24,1) 0.15s;
   }
 
   .skip-link{
@@ -711,7 +694,11 @@
   }
 
   @media (prefers-reduced-motion: reduce){
-    *{ animation:none !important; transition:none !important; }
+    *{ animation:none !important; }
+    /* Keep simple color crossfades (theme switching) even with reduced motion,
+       since a color fade isn't the kind of motion that causes discomfort —
+       but still kill actual movement-based transitions (scale, translate, etc). */
+    *{ transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease !important; }
   }
 
   @media (max-width:600px){
@@ -727,7 +714,7 @@
 <a class="skip-link" href="#main">Skip to content</a>
 
 <div class="toast" id="global-toast"></div>
-<div class="theme-curtain" id="theme-curtain"></div>
+
 
 <!-- MODE GATE: shown before anything else -->
 <div class="modal-overlay open" id="mode-gate" style="background:var(--paper); align-items:center;">
@@ -2043,10 +2030,6 @@ function finishEnteringApp(){
 
 /* ---------------- DARK MODE ---------------- */
 const THEME_STORAGE_KEY = 'wordbench_theme_v1';
-const THEME_CURTAIN_COLORS = {
-  dark:  'linear-gradient(180deg, #0B0815 0%, #15111F 60%, #1E1830 100%)',
-  light: 'linear-gradient(180deg, #FFF8ED 0%, #FAF6ED 60%, #F0EADA 100%)'
-};
 
 function applyTheme(theme){
   document.documentElement.setAttribute('data-theme', theme);
@@ -2054,63 +2037,14 @@ function applyTheme(theme){
   if(btn) btn.textContent = theme === 'dark' ? '☀️ Light mode' : '🌙 Dark mode';
 }
 
-let themeTransitionInProgress = false;
-
+// Just flips the data-theme attribute — the CSS variables (--paper, --ink, etc.)
+// and the transition rule on body/cards/inputs handle a smooth color crossfade
+// on their own. Text and content never move or get covered; only the colors change.
 function toggleTheme(){
-  if(themeTransitionInProgress) return; // ignore rapid double-clicks mid-animation
   const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
   const next = current === 'dark' ? 'light' : 'dark';
   localStorage.setItem(THEME_STORAGE_KEY, next);
-  sweepToTheme(next);
-}
-
-// Slides an opaque panel fully across the screen (like night sliding over day),
-// swaps the real theme only once the panel is 100% covering everything
-// (confirmed via the actual transitionend event, not a guessed timeout so
-// there is never a frame where the new theme peeks through early), then
-// continues the panel's slide off the far side to reveal the new theme.
-function sweepToTheme(next){
-  themeTransitionInProgress = true;
-  const curtain = document.getElementById('theme-curtain');
-  curtain.style.background = THEME_CURTAIN_COLORS[next];
-  curtain.classList.remove('sweeping', 'receding');
-  void curtain.offsetWidth; // force reflow so the animation restarts cleanly
-
-  let sweepInDone = false;
-
-  function finishSweepIn(){
-    if(sweepInDone) return;
-    sweepInDone = true;
-    curtain.removeEventListener('transitionend', onSweepInEnd);
-    applyTheme(next); // screen is fully covered right now — safe to swap with zero visible flash
-
-    let sweepOutDone = false;
-    function finishSweepOut(){
-      if(sweepOutDone) return;
-      sweepOutDone = true;
-      curtain.removeEventListener('transitionend', onSweepOutEnd);
-      curtain.classList.remove('receding');
-      themeTransitionInProgress = false;
-    }
-    function onSweepOutEnd(e2){
-      if(e2.propertyName !== 'transform') return;
-      finishSweepOut();
-    }
-    curtain.addEventListener('transitionend', onSweepOutEnd);
-    setTimeout(finishSweepOut, 700); // safety net if the transition never fires (e.g. reduced motion)
-
-    requestAnimationFrame(()=>{
-      curtain.classList.remove('sweeping');
-      curtain.classList.add('receding');
-    });
-  }
-  function onSweepInEnd(e){
-    if(e.propertyName !== 'transform') return;
-    finishSweepIn();
-  }
-  curtain.addEventListener('transitionend', onSweepInEnd);
-  setTimeout(finishSweepIn, 700); // safety net if the transition never fires (e.g. reduced motion)
-  curtain.classList.add('sweeping');
+  applyTheme(next);
 }
 
 function initTheme(){
