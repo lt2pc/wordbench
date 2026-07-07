@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
 <style>
   :root{
     --ink:#1A1625;
@@ -818,6 +819,63 @@
   }
   .file-drop-name:empty{ display:none; }
 
+  .supported-formats-line{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.75rem;
+    color:var(--ink-soft);
+    opacity:0.75;
+    margin-top:8px;
+    margin-bottom:18px;
+    text-align:center;
+  }
+  .supported-formats-line strong{ color:var(--ink-soft); opacity:1; }
+
+  .docx-preview{
+    margin-top:14px;
+    text-align:left;
+    background:var(--paper-dim);
+    border:1.5px solid var(--line);
+    border-radius:14px;
+    padding:18px;
+  }
+  .docx-preview-title{
+    font-weight:700;
+    font-size:0.9rem;
+    margin-bottom:10px;
+  }
+  .docx-column-map{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .docx-column-map label{
+    font-size:0.78rem;
+    font-weight:600;
+    color:var(--ink-soft);
+    display:block;
+    margin-bottom:4px;
+  }
+  .docx-preview-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:0.82rem;
+    margin-bottom:14px;
+    max-height:200px;
+    display:block;
+    overflow:auto;
+  }
+  .docx-preview-table th, .docx-preview-table td{
+    border:1px solid var(--line);
+    padding:6px 10px;
+    text-align:left;
+    white-space:nowrap;
+  }
+  .docx-preview-table th{
+    background:var(--paper);
+    font-weight:700;
+  }
+
   .status-msg{
     font-size:0.85rem;
     padding:10px 14px;
@@ -1022,21 +1080,16 @@
       <div class="field-label" style="margin-top:0;">Import into deck</div>
       <select class="form-select" id="import-target-deck" onchange="tpImportTargetDeck[currentTpSection()] = this.value"></select>
 
-      <div class="field-label">Upload a CSV file</div>
-      <div class="file-drop" id="csv-drop">
-        <input type="file" id="csv-file-input" accept=".csv,.txt" onchange="handleCsvSelect(event)">
-        <div class="file-drop-name" id="csv-file-name"></div>
-        <div class="field-hint" id="csv-format-hint" style="margin-top:10px;"></div>
-        <button class="ctrl-btn primary" id="csv-import-btn" style="display:none; margin-top:14px;" onclick="confirmCsvImport()">Import this file</button>
+      <div class="field-label">Upload a file</div>
+      <div class="file-drop" id="unified-drop">
+        <input type="file" id="unified-file-input" accept=".csv,.txt,.json,.docx" onchange="handleUnifiedFileSelect(event)">
+        <div class="file-drop-name" id="unified-file-name"></div>
+        <div class="field-hint" id="unified-format-hint" style="margin-top:10px;">CSV/Word columns: word or verb+particle, meaning, example. Word docs need a table — you'll confirm column mapping before importing.</div>
+        <button class="ctrl-btn primary" id="unified-import-btn" style="display:none; margin-top:14px;" onclick="confirmUnifiedImport()">Import this file</button>
       </div>
+      <div class="supported-formats-line">Supports: <strong>.csv</strong> · <strong>.docx</strong> (Word table) · <strong>.json</strong> (Wordbench deck export)</div>
 
-      <div class="field-label">Or upload a Wordbench deck file (.json)</div>
-      <div class="file-drop" id="json-drop">
-        <input type="file" id="json-file-input" accept=".json" onchange="handleJsonSelect(event)">
-        <div class="file-drop-name" id="json-file-name"></div>
-        <div class="field-hint">Adds all words from a previously exported deck file into the selected deck above</div>
-        <button class="ctrl-btn primary" id="json-import-btn" style="display:none; margin-top:14px;" onclick="confirmJsonImport()">Import this file</button>
-      </div>
+      <div id="docx-preview-area"></div>
 
       <div class="status-msg" id="import-status"></div>
     </div>
@@ -1574,13 +1627,7 @@ function renderTeacherPanel(){
   populateDeckDropdown('import-target-deck', section);
 
   // csv format hint
-  const hint = section === 'pv'
-    ? 'CSV columns: verb, particle, meaning, example'
-    : 'CSV columns: word, part of speech, meaning, example';
-  document.getElementById('csv-format-hint').textContent = hint;
-
-  resetCsvDrop();
-  resetJsonDrop();
+  resetUnifiedDrop();
   clearStatus('add-status');
   clearStatus('import-status');
 }
@@ -2026,63 +2073,240 @@ function addWordFromForm(){
 /* ---- Pending file state (selected but not yet imported) ---- */
 let pendingCsvFile = null;
 let pendingJsonFile = null;
+let docxParsedRows = null; // array of arrays (each row = array of cell text), for the currently previewed docx
 
-function handleCsvSelect(evt){
+/* ---- Unified file upload: detects type by extension, routes to the right parser ---- */
+function handleUnifiedFileSelect(evt){
   const file = evt.target.files[0];
-  const drop = document.getElementById('csv-drop');
-  const nameEl = document.getElementById('csv-file-name');
-  const btn = document.getElementById('csv-import-btn');
+  const drop = document.getElementById('unified-drop');
+  const nameEl = document.getElementById('unified-file-name');
+  const btn = document.getElementById('unified-import-btn');
+  const previewArea = document.getElementById('docx-preview-area');
 
-  if(!file){
-    pendingCsvFile = null;
-    drop.classList.remove('has-file');
-    nameEl.textContent = '';
-    btn.style.display = 'none';
-    return;
-  }
-
-  pendingCsvFile = file;
-  drop.classList.add('has-file');
-  nameEl.textContent = file.name;
-  btn.style.display = 'inline-block';
-  clearStatus('import-status');
-}
-
-function handleJsonSelect(evt){
-  const file = evt.target.files[0];
-  const drop = document.getElementById('json-drop');
-  const nameEl = document.getElementById('json-file-name');
-  const btn = document.getElementById('json-import-btn');
-
-  if(!file){
-    pendingJsonFile = null;
-    drop.classList.remove('has-file');
-    nameEl.textContent = '';
-    btn.style.display = 'none';
-    return;
-  }
-
-  pendingJsonFile = file;
-  drop.classList.add('has-file');
-  nameEl.textContent = file.name;
-  btn.style.display = 'inline-block';
-  clearStatus('import-status');
-}
-
-function resetCsvDrop(){
+  // clear any previous pending state
   pendingCsvFile = null;
-  document.getElementById('csv-drop').classList.remove('has-file');
-  document.getElementById('csv-file-name').textContent = '';
-  document.getElementById('csv-import-btn').style.display = 'none';
-  document.getElementById('csv-file-input').value = '';
+  pendingJsonFile = null;
+  docxParsedRows = null;
+  previewArea.innerHTML = '';
+
+  if(!file){
+    drop.classList.remove('has-file');
+    nameEl.textContent = '';
+    btn.style.display = 'none';
+    return;
+  }
+
+  const ext = file.name.split('.').pop().toLowerCase();
+  drop.classList.add('has-file');
+  nameEl.textContent = file.name;
+  clearStatus('import-status');
+
+  if(ext === 'csv' || ext === 'txt'){
+    pendingCsvFile = file;
+    btn.style.display = 'inline-block';
+  } else if(ext === 'json'){
+    pendingJsonFile = file;
+    btn.style.display = 'inline-block';
+  } else if(ext === 'docx'){
+    btn.style.display = 'none'; // docx shows its own "Import this table" button after preview loads
+    previewArea.innerHTML = `<div class="field-hint" style="margin-top:10px;">Reading document…</div>`;
+    parseDocxFile(file, previewArea);
+  } else {
+    showStatus('import-status', 'Unsupported file type. Please upload a .csv, .docx, or .json file.', false);
+    drop.classList.remove('has-file');
+    nameEl.textContent = '';
+    btn.style.display = 'none';
+  }
 }
 
-function resetJsonDrop(){
+function confirmUnifiedImport(){
+  if(pendingCsvFile){ confirmCsvImport(); }
+  else if(pendingJsonFile){ confirmJsonImport(); }
+}
+
+function resetUnifiedDrop(){
+  pendingCsvFile = null;
   pendingJsonFile = null;
-  document.getElementById('json-drop').classList.remove('has-file');
-  document.getElementById('json-file-name').textContent = '';
-  document.getElementById('json-import-btn').style.display = 'none';
-  document.getElementById('json-file-input').value = '';
+  docxParsedRows = null;
+  document.getElementById('unified-drop').classList.remove('has-file');
+  document.getElementById('unified-file-name').textContent = '';
+  document.getElementById('unified-import-btn').style.display = 'none';
+  document.getElementById('unified-file-input').value = '';
+  document.getElementById('docx-preview-area').innerHTML = '';
+}
+
+/* ---- Word (.docx) table import ---- */
+function parseDocxFile(file, previewArea){
+  const reader = new FileReader();
+  reader.onload = function(e){
+    mammoth.convertToHtml({ arrayBuffer: e.target.result })
+      .then(function(result){
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(result.value, 'text/html');
+        const table = doc.querySelector('table');
+
+        if(!table){
+          previewArea.innerHTML = `<div class="status-msg show err">No table was found in this document. Wordbench currently reads word lists from Word tables only.</div>`;
+          docxParsedRows = null;
+          return;
+        }
+
+        const rows = Array.from(table.querySelectorAll('tr')).map(tr =>
+          Array.from(tr.querySelectorAll('td,th')).map(cell => cell.textContent.trim())
+        ).filter(row => row.some(cell => cell.length > 0));
+
+        if(rows.length === 0){
+          previewArea.innerHTML = `<div class="status-msg show err">The table in this document appears to be empty.</div>`;
+          docxParsedRows = null;
+          return;
+        }
+
+        docxParsedRows = rows;
+        renderDocxPreview();
+      })
+      .catch(function(err){
+        console.error('Mammoth parse error:', err);
+        previewArea.innerHTML = `<div class="status-msg show err">Could not read that file. Make sure it's a valid .docx document.</div>`;
+        docxParsedRows = null;
+      });
+  };
+  reader.onerror = function(){
+    previewArea.innerHTML = `<div class="status-msg show err">Could not read that file.</div>`;
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function renderDocxPreview(){
+  const section = currentTpSection();
+  const previewArea = document.getElementById('docx-preview-area');
+  if(!docxParsedRows) return;
+
+  const colCount = Math.max(...docxParsedRows.map(r => r.length));
+  const firstRowLooksLikeHeader = docxParsedRows[0].some(c =>
+    /^(word|verb|particle|meaning|definition|example|pos|part of speech)/i.test(c)
+  );
+  const dataRows = firstRowLooksLikeHeader ? docxParsedRows.slice(1) : docxParsedRows;
+  const headerRow = firstRowLooksLikeHeader ? docxParsedRows[0] : null;
+
+  const colOptionsHtml = (selectedGuess) => {
+    const fields = section === 'pv'
+      ? [['','— none —'],['verb','Verb'],['particle','Particle'],['meaning','Meaning'],['example','Example']]
+      : [['','— none —'],['word','Word'],['pos','Part of speech'],['meaning','Meaning'],['example','Example']];
+    return fields.map(([val,label]) =>
+      `<option value="${val}" ${val===selectedGuess ? 'selected':''}>${label}</option>`
+    ).join('');
+  };
+
+  // best-effort guess of which column maps to which field, based on header text if present
+  function guessField(colIndex){
+    const headerText = headerRow ? headerRow[colIndex].toLowerCase() : '';
+    if(section === 'pv'){
+      if(/verb/.test(headerText)) return 'verb';
+      if(/particle/.test(headerText)) return 'particle';
+      if(/meaning|definition/.test(headerText)) return 'meaning';
+      if(/example/.test(headerText)) return 'example';
+      // fallback positional guess for a typical 4-column table
+      return ['verb','particle','meaning','example'][colIndex] || '';
+    } else {
+      if(/word/.test(headerText)) return 'word';
+      if(/part of speech|pos\b/.test(headerText)) return 'pos';
+      if(/meaning|definition/.test(headerText)) return 'meaning';
+      if(/example/.test(headerText)) return 'example';
+      return ['word','pos','meaning','example'][colIndex] || '';
+    }
+  }
+
+  let mapHtml = '<div class="docx-column-map">';
+  for(let c=0; c<colCount; c++){
+    mapHtml += `<div>
+      <label>Column ${c+1}${headerRow && headerRow[c] ? ' ("'+escapeHtml(headerRow[c])+'")' : ''}</label>
+      <select class="form-select docx-col-select" data-col="${c}">${colOptionsHtml(guessField(c))}</select>
+    </div>`;
+  }
+  mapHtml += '</div>';
+
+  const previewRows = dataRows.slice(0, 4);
+  let tableHtml = '<table class="docx-preview-table"><tbody>';
+  previewRows.forEach(row => {
+    tableHtml += '<tr>' + row.map(cell => `<td>${escapeHtml(cell)}</td>`).join('') + '</tr>';
+  });
+  tableHtml += '</tbody></table>';
+
+  previewArea.innerHTML = `
+    <div class="docx-preview">
+      <div class="docx-preview-title">Match each column to a field (${dataRows.length} row${dataRows.length===1?'':'s'} found)</div>
+      ${mapHtml}
+      <div class="field-hint" style="margin-bottom:8px;">Preview of the first few rows:</div>
+      ${tableHtml}
+      <button class="ctrl-btn primary" onclick="confirmDocxImport()">Import this table</button>
+    </div>
+  `;
+}
+
+function confirmDocxImport(){
+  const section = currentTpSection();
+  const targetDeckId = document.getElementById('import-target-deck').value;
+
+  if(!targetDeckId || !deckStore[section].decks[targetDeckId]){
+    showStatus('import-status', 'There are no decks here. Create a deck first under "My decks".', false);
+    return;
+  }
+  if(!docxParsedRows){
+    showStatus('import-status', 'No table data to import.', false);
+    return;
+  }
+
+  const firstRowLooksLikeHeader = docxParsedRows[0].some(c =>
+    /^(word|verb|particle|meaning|definition|example|pos|part of speech)/i.test(c)
+  );
+  const dataRows = firstRowLooksLikeHeader ? docxParsedRows.slice(1) : docxParsedRows;
+
+  const colSelects = document.querySelectorAll('.docx-col-select');
+  const colMap = {}; // fieldName -> column index
+  colSelects.forEach(sel => {
+    const field = sel.value;
+    if(field) colMap[field] = parseInt(sel.getAttribute('data-col'), 10);
+  });
+
+  const requiredFields = section === 'pv' ? ['verb','particle','meaning'] : ['word','meaning'];
+  const missing = requiredFields.filter(f => colMap[f] === undefined);
+  if(missing.length > 0){
+    showStatus('import-status', `Please map a column to: ${missing.join(', ')}.`, false);
+    return;
+  }
+
+  let added = 0, skipped = 0;
+  dataRows.forEach(row => {
+    if(section === 'pv'){
+      const verb = (row[colMap.verb] || '').trim();
+      const particle = (row[colMap.particle] || '').trim();
+      const meaning = (row[colMap.meaning] || '').trim();
+      const example = colMap.example !== undefined ? (row[colMap.example] || '').trim() : '';
+      if(!verb || !particle || !meaning){ skipped++; return; }
+      deckStore.pv.decks[targetDeckId].words.push({ verb, particle, meaning, example: example || `${verb} ${particle}.` });
+      added++;
+    } else {
+      const word = (row[colMap.word] || '').trim();
+      const pos = colMap.pos !== undefined ? (row[colMap.pos] || '').trim() : '';
+      const meaning = (row[colMap.meaning] || '').trim();
+      const example = colMap.example !== undefined ? (row[colMap.example] || '').trim() : '';
+      if(!word || !meaning){ skipped++; return; }
+      deckStore.vc.decks[targetDeckId].words.push({ word, pos, meaning, example: example || word });
+      added++;
+    }
+  });
+
+  saveDeckStore(section);
+  renderDeckList(section);
+  refreshDeckSelect(section);
+  if(deckStore[section].selectedDeckId === targetDeckId){
+    resetStudyState(section);
+    if(state[section].mode === 'flash') renderFlash(section); else renderQuiz(section);
+  }
+
+  showToast('Uploaded successfully!', 2500);
+  showStatus('import-status', `Imported ${added} word${added===1?'':'s'}${skipped ? `, skipped ${skipped} incomplete row${skipped===1?'':'s'}` : ''} from Word document.`, true);
+  resetUnifiedDrop();
 }
 
 function parseCsvLine(line){
@@ -2156,11 +2380,11 @@ function confirmCsvImport(){
     }catch(err){
       showStatus('import-status', 'Could not read that file. Please check the CSV format and try again.', false);
     }
-    resetCsvDrop();
+    resetUnifiedDrop();
   };
   reader.onerror = function(){
     showStatus('import-status', 'Could not read that file.', false);
-    resetCsvDrop();
+    resetUnifiedDrop();
   };
   reader.readAsText(file);
 }
@@ -2202,7 +2426,7 @@ function confirmJsonImport(){
     }catch(err){
       showStatus('import-status', 'Could not read that file. Make sure it is a valid Wordbench .json export.', false);
     }
-    resetJsonDrop();
+    resetUnifiedDrop();
   };
   reader.readAsText(file);
 }
