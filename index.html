@@ -673,6 +673,95 @@
     max-width:280px;
     flex:0 1 260px;
   }
+  .roster-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:9px 12px;
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    margin-bottom:6px;
+  }
+  .roster-item .name{ font-weight:700; font-size:0.88rem; }
+  .roster-item .class-tag{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.72rem;
+    color:var(--ink-soft);
+    opacity:0.8;
+  }
+  .roster-empty{
+    font-size:0.82rem;
+    color:var(--ink-soft);
+    opacity:0.7;
+    padding:6px 0;
+  }
+  .roster-group-header{
+    display:flex;
+    align-items:stretch;
+    gap:6px;
+    margin-top:8px;
+  }
+  .roster-group-header:first-child{ margin-top:0; }
+  .roster-group-toggle{
+    flex:1 1 auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-family:'Inter', sans-serif;
+    font-weight:700;
+    font-size:0.85rem;
+    color:var(--ink);
+    background:var(--paper-dim);
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    padding:10px 14px;
+    cursor:pointer;
+    transition: all 0.15s ease;
+  }
+  .roster-group-toggle:hover{ border-color:var(--vc-primary-deep); }
+  .roster-group-remove{
+    flex:0 0 auto;
+    font-size:0.72rem;
+    padding:0 12px;
+    white-space:nowrap;
+  }
+  .roster-group-count{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.72rem;
+    background:var(--vc-primary);
+    color:#fff;
+    border-radius:999px;
+    padding:2px 9px;
+  }
+  .roster-group-box{
+    border:1.5px solid var(--line);
+    border-top:none;
+    border-radius:0 0 10px 10px;
+    padding:8px 10px;
+    margin-bottom:2px;
+  }
+  .roster-group-label:first-child{ margin-top:0; }
+  .student-pick-btn{
+    width:100%;
+    text-align:left;
+    font-family:'Inter', sans-serif;
+    font-weight:700;
+    font-size:0.95rem;
+    padding:14px 18px;
+    border-radius:14px;
+    border:1.5px solid var(--line);
+    background:var(--paper-dim);
+    color:var(--ink);
+    cursor:pointer;
+    margin-bottom:8px;
+    transition: all 0.18s cubic-bezier(.34,1.56,.64,1);
+  }
+  .student-pick-btn:hover{
+    border-color:var(--pv-primary-deep);
+    background: linear-gradient(135deg, rgba(255,90,60,0.1), rgba(255,138,61,0.08));
+    transform:translateX(4px);
+  }
   .modal-head{
     display:flex;
     justify-content:space-between;
@@ -1003,7 +1092,7 @@
     <div class="brand" style="margin-bottom:6px;">wordbench<span class="dot">.</span></div>
     <div class="modal-sub" style="margin-bottom:28px;">who's using the site right now?</div>
     <div style="display:flex; flex-direction:column; gap:12px;">
-      <button class="ctrl-btn primary" style="padding:16px; font-size:1rem;" onclick="enterAsStudent()">I'm a student</button>
+      <button class="ctrl-btn primary" style="padding:16px; font-size:1rem;" onclick="openStudentLobby()">I'm a student</button>
       <button class="ctrl-btn" style="padding:16px; font-size:1rem; background:linear-gradient(135deg, var(--vc-primary), var(--vc-accent)); border-color:var(--vc-primary-deep); color:#fff; box-shadow:0 6px 18px rgba(91,79,232,0.35);" onclick="showTeacherLogin()">I'm the teacher</button>
     </div>
     <div id="teacher-login-box" style="display:none; margin-top:20px; text-align:left;">
@@ -1014,6 +1103,18 @@
       </div>
       <div class="status-msg" id="login-status"></div>
     </div>
+  </div>
+</div>
+
+<!-- STUDENT LOBBY: pick who you are before entering -->
+<div class="modal-overlay" id="student-lobby" style="background:var(--paper); align-items:center;" onclick="if(event.target === this) closeStudentLobby()">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-head">
+      <div class="modal-title">Who are you?</div>
+      <button class="modal-close" onclick="closeStudentLobby()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-sub" style="margin-bottom:20px;">pick your name to start studying</div>
+    <div id="student-lobby-list"></div>
   </div>
 </div>
 
@@ -1201,6 +1302,28 @@
       <div id="published-summary-vc" class="published-summary"></div>
     </div>
 
+    <div class="modal published-panel">
+      <div class="modal-head">
+        <div class="modal-title" style="font-size:1.2rem;">Register a student</div>
+      </div>
+      <div class="modal-sub">add students to the class roster</div>
+
+      <div class="field-label" style="margin-top:0;">Student name</div>
+      <input type="text" id="new-student-name" placeholder="e.g. An">
+
+      <div class="field-label">Class / group</div>
+      <input type="text" id="new-student-class" placeholder="e.g. 8A, Monday group" list="existing-classes-list">
+      <datalist id="existing-classes-list"></datalist>
+
+      <div class="modal-actions" style="margin-top:14px;">
+        <button class="ctrl-btn primary" onclick="registerStudent()">Register</button>
+      </div>
+      <div class="status-msg" id="student-register-status"></div>
+
+      <div class="field-label">Roster</div>
+      <div id="student-roster-list"></div>
+    </div>
+
   </div> <!-- end modal-row -->
 </div>
 
@@ -1324,6 +1447,166 @@ function loadLocalFallback(){
     if(raw) return JSON.parse(raw);
   }catch(e){ /* ignore corrupt storage */ }
   return defaultDeckStore();
+}
+
+/* ---------------- STUDENT ROSTER (separate Firestore doc, same sync pattern) ---------------- */
+const ROSTER_DOC_PATH = { collection: "wordbench", doc: "roster" };
+const ROSTER_LOCAL_FALLBACK_KEY = 'wordbench_roster_local_fallback_v1';
+
+let studentRoster = []; // array of { id, name, className }
+let unsubscribeRosterSnapshot = null;
+
+function connectRosterToCloud(){
+  if(!firebaseReady){
+    studentRoster = loadRosterLocalFallback();
+    renderStudentRoster();
+    return;
+  }
+  const ref = db.collection(ROSTER_DOC_PATH.collection).doc(ROSTER_DOC_PATH.doc);
+  unsubscribeRosterSnapshot = ref.onSnapshot((snap)=>{
+    if(snap.exists){
+      studentRoster = snap.data().students || [];
+    } else {
+      ref.set({ students: [] }).catch(()=>{});
+      studentRoster = [];
+    }
+    renderStudentRoster();
+    renderStudentLobby();
+  }, (err)=>{
+    console.error('Roster sync error:', err);
+    studentRoster = loadRosterLocalFallback();
+    renderStudentRoster();
+    renderStudentLobby();
+  });
+}
+
+function loadRosterLocalFallback(){
+  try{
+    const raw = localStorage.getItem(ROSTER_LOCAL_FALLBACK_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){ /* ignore corrupt storage */ }
+  return [];
+}
+
+function saveRoster(){
+  localStorage.setItem(ROSTER_LOCAL_FALLBACK_KEY, JSON.stringify(studentRoster));
+  if(firebaseReady && db && isTeacherMode()){
+    const ref = db.collection(ROSTER_DOC_PATH.collection).doc(ROSTER_DOC_PATH.doc);
+    ref.set({ students: studentRoster }).catch((err)=>{
+      console.error('Failed to save roster to cloud:', err);
+      showStatus('student-register-status', 'Could not save to the shared database — this change is only saved on this device.', false);
+    });
+  }
+}
+
+function normalizeForCompare(str){
+  return (str || '').trim().toLowerCase().replace(/\s+/g,' ');
+}
+
+function registerStudent(){
+  const nameInput = document.getElementById('new-student-name');
+  const classInput = document.getElementById('new-student-class');
+  const name = nameInput.value.trim();
+  const className = classInput.value.trim();
+
+  if(!name || !className){
+    showStatus('student-register-status', 'Please fill in both name and class/group.', false);
+    return;
+  }
+
+  const isDuplicate = studentRoster.some(s =>
+    normalizeForCompare(s.name) === normalizeForCompare(name) &&
+    normalizeForCompare(s.className) === normalizeForCompare(className)
+  );
+  if(isDuplicate){
+    showStatus('student-register-status', `"${name}" is already registered in "${className}". Try a different name or class to keep students unique.`, false);
+    return;
+  }
+
+  studentRoster.push({ id: slugId(), name, className });
+  saveRoster();
+  renderStudentRoster();
+  renderStudentLobby();
+
+  nameInput.value = '';
+  classInput.value = '';
+  showToast(`${name} registered!`, 2000);
+  clearStatus('student-register-status');
+}
+
+function removeStudent(studentId){
+  const student = studentRoster.find(s => s.id === studentId);
+  if(!student) return;
+  if(!confirm(`Remove "${student.name}" (${student.className}) from the roster?`)) return;
+  studentRoster = studentRoster.filter(s => s.id !== studentId);
+  saveRoster();
+  renderStudentRoster();
+  renderStudentLobby();
+}
+
+function removeClass(className){
+  const studentsInClass = studentRoster.filter(s => s.className === className);
+  if(studentsInClass.length === 0) return;
+  const names = studentsInClass.map(s => s.name).join(', ');
+  if(!confirm(`Remove the entire class "${className}"? This will remove ${studentsInClass.length} student${studentsInClass.length===1?'':'s'}: ${names}.`)) return;
+  studentRoster = studentRoster.filter(s => s.className !== className);
+  saveRoster();
+  renderStudentRoster();
+  renderStudentLobby();
+  showToast(`Removed class "${className}"`, 2200);
+}
+
+function renderStudentRoster(){
+  const list = document.getElementById('student-roster-list');
+  populateClassDatalist();
+  if(!list) return;
+
+  if(studentRoster.length === 0){
+    list.innerHTML = `<div class="roster-empty">No students registered yet.</div>`;
+    return;
+  }
+
+  // group by class for easier scanning
+  const byClass = {};
+  studentRoster.forEach(s => {
+    if(!byClass[s.className]) byClass[s.className] = [];
+    byClass[s.className].push(s);
+  });
+
+  const html = Object.keys(byClass).sort().map(className => {
+    const students = byClass[className];
+    const groupKey = 'roster-group-' + className.replace(/[^a-z0-9]+/gi, '_').toLowerCase();
+    return `
+      <div class="roster-group-header">
+        <button class="roster-group-toggle" onclick="toggleRosterGroup('${groupKey}')">
+          <span>${escapeHtml(className)}</span>
+          <span class="roster-group-count">${students.length}</span>
+        </button>
+        <button class="icon-btn danger roster-group-remove" data-class-name="${escapeHtml(className)}" onclick="removeClass(this.getAttribute('data-class-name'))" title="Remove entire class">Remove class</button>
+      </div>
+      <div class="roster-group-box" id="${groupKey}" style="display:none;">
+        ${students.map(s => `
+          <div class="roster-item">
+            <span class="name">${escapeHtml(s.name)}</span>
+            <button class="icon-btn danger" onclick="removeStudent('${s.id}')">Remove</button>
+          </div>`).join('')}
+      </div>`;
+  }).join('');
+
+  list.innerHTML = html;
+}
+
+function toggleRosterGroup(groupKey){
+  const el = document.getElementById(groupKey);
+  if(!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function populateClassDatalist(){
+  const datalist = document.getElementById('existing-classes-list');
+  if(!datalist) return;
+  const uniqueClasses = Array.from(new Set(studentRoster.map(s => s.className))).sort();
+  datalist.innerHTML = uniqueClasses.map(c => `<option value="${escapeHtml(c)}"></option>`).join('');
 }
 
 // Saves deck changes. Teachers push only the affected section to Firestore
@@ -1903,6 +2186,7 @@ function openTeacherPanel(){
   document.getElementById('tp-section-select').value = currentActiveSection();
   setTpTab('decks');
   renderTeacherPanel();
+  renderStudentRoster();
   // Ensure the browser paints the closed (opacity:0) state first, then
   // triggers the transition on the next frame — otherwise the class add
   // and the heavy DOM rewrite above can happen in the same paint and the
@@ -2842,6 +3126,59 @@ function attemptTeacherLogin(){
   }
 }
 
+const CURRENT_STUDENT_KEY = 'wordbench_current_student_v1';
+let currentStudent = null; // { id, name, className } — the student this browser is currently representing
+
+function openStudentLobby(){
+  renderStudentLobby();
+  document.getElementById('student-lobby').classList.add('open');
+}
+function closeStudentLobby(){
+  document.getElementById('student-lobby').classList.remove('open');
+}
+
+function renderStudentLobby(){
+  const list = document.getElementById('student-lobby-list');
+  if(!list) return;
+
+  if(studentRoster.length === 0){
+    list.innerHTML = `<div class="roster-empty" style="text-align:center; padding:20px 0;">No students have been registered yet. Ask your teacher to add you under Teacher tools → Register a student.</div>`;
+    return;
+  }
+
+  const byClass = {};
+  studentRoster.forEach(s => {
+    if(!byClass[s.className]) byClass[s.className] = [];
+    byClass[s.className].push(s);
+  });
+
+  let html = '';
+  Object.keys(byClass).sort().forEach(className => {
+    html += `<div class="roster-group-label">${escapeHtml(className)}</div>`;
+    byClass[className].forEach(s => {
+      html += `<button class="student-pick-btn" onclick="pickStudent('${s.id}')">${escapeHtml(s.name)}</button>`;
+    });
+  });
+  list.innerHTML = html;
+}
+
+function pickStudent(studentId){
+  const student = studentRoster.find(s => s.id === studentId);
+  if(!student) return;
+  currentStudent = student;
+  localStorage.setItem(CURRENT_STUDENT_KEY, JSON.stringify(student));
+  closeStudentLobby();
+  enterAsStudent();
+}
+
+function loadCurrentStudent(){
+  try{
+    const raw = localStorage.getItem(CURRENT_STUDENT_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){ /* ignore corrupt storage */ }
+  return null;
+}
+
 function enterAsStudent(){
   currentMode = 'student';
   saveModeSession('student');
@@ -2855,6 +3192,8 @@ function enterAsTeacher(){
 
 function switchMode(){
   currentMode = null;
+  currentStudent = null;
+  localStorage.removeItem(CURRENT_STUDENT_KEY);
   clearModeSession();
   document.getElementById('mode-gate').classList.add('open');
   document.getElementById('app-shell').style.display = 'none';
@@ -2867,7 +3206,13 @@ function finishEnteringApp(){
   document.getElementById('mode-gate').classList.remove('open');
   document.getElementById('app-shell').style.display = 'block';
   document.getElementById('teacher-tools-btn').style.display = isTeacherMode() ? 'inline-block' : 'none';
-  document.getElementById('mode-indicator').textContent = isTeacherMode() ? 'Teacher view' : 'Student view';
+  if(isTeacherMode()){
+    document.getElementById('mode-indicator').textContent = 'Teacher view';
+  } else {
+    document.getElementById('mode-indicator').textContent = currentStudent
+      ? `${currentStudent.name} · ${currentStudent.className}`
+      : 'Student view';
+  }
 }
 
 /* ---------------- DARK MODE ---------------- */
@@ -2908,6 +3253,7 @@ connectToCloud(function(){
   renderFlash('pv');
   renderFlash('vc');
 });
+connectRosterToCloud();
 
 // Restore a previous login/mode if it hasn't expired yet, so refreshing the page
 // doesn't force the person to choose student/teacher and re-enter the password again.
@@ -2916,6 +3262,7 @@ connectToCloud(function(){
   if(savedMode === 'teacher'){
     enterAsTeacher();
   } else if(savedMode === 'student'){
+    currentStudent = loadCurrentStudent();
     enterAsStudent();
   }
   // otherwise leave the mode gate showing
