@@ -391,6 +391,41 @@
     opacity:0.6;
   }
 
+  .phonetic-tag{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.95rem;
+    color:var(--pv-primary-deep);
+    margin-top:8px;
+    opacity:0.85;
+  }
+
+  .syn-ant-row{
+    display:flex;
+    gap:10px;
+    margin-top:14px;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+  .syn-ant-chip{
+    background:rgba(255,255,255,0.18);
+    border:1.5px solid rgba(255,255,255,0.35);
+    border-radius:12px;
+    padding:8px 14px;
+    font-size:0.85rem;
+    font-weight:600;
+    max-width:200px;
+  }
+  .syn-ant-label{
+    display:block;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.68rem;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    opacity:0.8;
+    font-weight:700;
+    margin-bottom:2px;
+  }
+
   .meaning{
     font-size:1.3rem;
     font-weight:600;
@@ -469,6 +504,10 @@
     font-weight:600;
     font-size:1.5rem;
     line-height:1.4;
+  }
+  .fill-blank-sentence{
+    font-style:italic;
+    font-size:1.15rem;
   }
   .quiz-options{
     display:grid;
@@ -846,8 +885,8 @@
   .docx-column-map{
     display:grid;
     grid-template-columns:1fr 1fr;
-    gap:10px;
-    margin-bottom:14px;
+    gap:14px 16px;
+    margin-bottom:16px;
   }
   .docx-column-map label{
     font-size:0.78rem;
@@ -1049,6 +1088,18 @@
             <input type="text" id="f-particle" placeholder="e.g. up">
           </div>
         </div>
+        <div class="field-label">Phonetic (optional)</div>
+        <input type="text" id="f-phonetic" placeholder="e.g. /gɪv ʌp/">
+        <div class="field-row2">
+          <div>
+            <div class="field-label">Synonym (optional)</div>
+            <input type="text" id="f-synonym" placeholder="e.g. quit, abandon">
+          </div>
+          <div>
+            <div class="field-label">Antonym (optional)</div>
+            <input type="text" id="f-antonym" placeholder="e.g. persist, continue">
+          </div>
+        </div>
       </div>
       <div id="vc-fields" style="display:none;">
         <div class="field-row2">
@@ -1115,33 +1166,33 @@
 <script>
 /* ---------------- DEFAULT DATA ---------------- */
 const defaultPhrasalVerbs = [
-  { verb:"give", particle:"up", meaning:"to stop trying, or to quit something", example:"She didn't give up even after failing the test twice." },
-  { verb:"look", particle:"forward to", meaning:"to feel excited about something that will happen", example:"I'm looking forward to the weekend trip." },
-  { verb:"figure", particle:"out", meaning:"to understand or solve something after thinking", example:"It took him an hour to figure out the math problem." },
-  { verb:"run", particle:"into", meaning:"to meet someone by chance", example:"I ran into my old teacher at the supermarket." },
-  { verb:"put", particle:"off", meaning:"to delay or postpone something", example:"Don't put off your homework until Sunday night." },
-  { verb:"bring", particle:"up", meaning:"to mention a topic in conversation", example:"He brought up the schedule change during the meeting." },
-  { verb:"turn", particle:"down", meaning:"to refuse an offer or request", example:"She turned down the job offer to stay closer to home." },
-  { verb:"get", particle:"along with", meaning:"to have a friendly relationship with someone", example:"My sister gets along with almost everyone she meets." },
-  { verb:"come", particle:"across", meaning:"to find something by chance", example:"I came across an old photo while cleaning my room." },
-  { verb:"set", particle:"up", meaning:"to arrange or prepare something", example:"Can you set up the projector before class starts?" },
-  { verb:"take", particle:"after", meaning:"to resemble a parent or relative", example:"She takes after her mother — same laugh, same humor." },
-  { verb:"call", particle:"off", meaning:"to cancel something planned", example:"They called off the picnic because of the storm." },
+  { verb:"give", particle:"up", meaning:"to stop trying, or to quit something", example:"She didn't give up even after failing the test twice.", synonyms:"quit, abandon", antonyms:"persist, continue" },
+  { verb:"look", particle:"forward to", meaning:"to feel excited about something that will happen", example:"I'm looking forward to the weekend trip.", synonyms:"anticipate, await", antonyms:"dread" },
+  { verb:"figure", particle:"out", meaning:"to understand or solve something after thinking", example:"It took him an hour to figure out the math problem.", synonyms:"solve, work out", antonyms:"" },
+  { verb:"run", particle:"into", meaning:"to meet someone by chance", example:"I ran into my old teacher at the supermarket.", synonyms:"encounter, bump into", antonyms:"avoid" },
+  { verb:"put", particle:"off", meaning:"to delay or postpone something", example:"Don't put off your homework until Sunday night.", synonyms:"postpone, delay", antonyms:"do now, expedite" },
+  { verb:"bring", particle:"up", meaning:"to mention a topic in conversation", example:"He brought up the schedule change during the meeting.", synonyms:"raise, mention", antonyms:"" },
+  { verb:"turn", particle:"down", meaning:"to refuse an offer or request", example:"She turned down the job offer to stay closer to home.", synonyms:"decline, reject", antonyms:"accept" },
+  { verb:"get", particle:"along with", meaning:"to have a friendly relationship with someone", example:"My sister gets along with almost everyone she meets.", synonyms:"bond with", antonyms:"clash with" },
+  { verb:"come", particle:"across", meaning:"to find something by chance", example:"I came across an old photo while cleaning my room.", synonyms:"discover, stumble upon", antonyms:"" },
+  { verb:"set", particle:"up", meaning:"to arrange or prepare something", example:"Can you set up the projector before class starts?", synonyms:"arrange, prepare", antonyms:"take down, dismantle" },
+  { verb:"take", particle:"after", meaning:"to resemble a parent or relative", example:"She takes after her mother — same laugh, same humor.", synonyms:"resemble", antonyms:"" },
+  { verb:"call", particle:"off", meaning:"to cancel something planned", example:"They called off the picnic because of the storm.", synonyms:"cancel, scrap", antonyms:"proceed with" },
 ];
 
 const defaultVocabulary = [
-  { word:"meticulous", pos:"adj.", meaning:"very careful and precise about details", example:"The editor was meticulous, catching every small typo." },
-  { word:"ambiguous", pos:"adj.", meaning:"having more than one possible meaning; unclear", example:"His answer was ambiguous, so nobody knew what he meant." },
-  { word:"resilient", pos:"adj.", meaning:"able to recover quickly from difficulties", example:"Despite the setback, the team remained resilient." },
-  { word:"candid", pos:"adj.", meaning:"honest and direct, sometimes bluntly so", example:"She gave a candid opinion about the project's flaws." },
-  { word:"scarce", pos:"adj.", meaning:"not enough of something; hard to find", example:"Fresh water was scarce during the dry season." },
-  { word:"reluctant", pos:"adj.", meaning:"unwilling or hesitant to do something", example:"He was reluctant to speak in front of the class." },
-  { word:"thorough", pos:"adj.", meaning:"complete and careful, missing no detail", example:"The inspector did a thorough check of the building." },
-  { word:"prevalent", pos:"adj.", meaning:"widespread; common at a particular time or place", example:"Remote work became prevalent after the pandemic." },
-  { word:"insight", pos:"n.", meaning:"a clear understanding of a complex situation", example:"Her comment gave us real insight into the problem." },
-  { word:"diligent", pos:"adj.", meaning:"showing careful and steady effort", example:"He was diligent about reviewing his notes every night." },
-  { word:"skeptical", pos:"adj.", meaning:"having doubts; not easily convinced", example:"She stayed skeptical about the surprising claim." },
-  { word:"versatile", pos:"adj.", meaning:"able to adapt to many different functions or situations", example:"A versatile employee can handle several different roles." },
+  { word:"meticulous", pos:"adj.", meaning:"very careful and precise about details", example:"The editor was meticulous, catching every small typo.", synonyms:"thorough, precise", antonyms:"careless, sloppy" },
+  { word:"ambiguous", pos:"adj.", meaning:"having more than one possible meaning; unclear", example:"His answer was ambiguous, so nobody knew what he meant.", synonyms:"vague, unclear", antonyms:"clear, explicit" },
+  { word:"resilient", pos:"adj.", meaning:"able to recover quickly from difficulties", example:"Despite the setback, the team remained resilient.", synonyms:"tough, adaptable", antonyms:"fragile" },
+  { word:"candid", pos:"adj.", meaning:"honest and direct, sometimes bluntly so", example:"She gave a candid opinion about the project's flaws.", synonyms:"frank, honest", antonyms:"evasive" },
+  { word:"scarce", pos:"adj.", meaning:"not enough of something; hard to find", example:"Fresh water was scarce during the dry season.", synonyms:"rare, limited", antonyms:"abundant, plentiful" },
+  { word:"reluctant", pos:"adj.", meaning:"unwilling or hesitant to do something", example:"He was reluctant to speak in front of the class.", synonyms:"hesitant, unwilling", antonyms:"eager, willing" },
+  { word:"thorough", pos:"adj.", meaning:"complete and careful, missing no detail", example:"The inspector did a thorough check of the building.", synonyms:"comprehensive, meticulous", antonyms:"superficial" },
+  { word:"prevalent", pos:"adj.", meaning:"widespread; common at a particular time or place", example:"Remote work became prevalent after the pandemic.", synonyms:"widespread, common", antonyms:"rare, uncommon" },
+  { word:"insight", pos:"n.", meaning:"a clear understanding of a complex situation", example:"Her comment gave us real insight into the problem.", synonyms:"understanding, perception", antonyms:"confusion" },
+  { word:"diligent", pos:"adj.", meaning:"showing careful and steady effort", example:"He was diligent about reviewing his notes every night.", synonyms:"hardworking, industrious", antonyms:"lazy, negligent" },
+  { word:"skeptical", pos:"adj.", meaning:"having doubts; not easily convinced", example:"She stayed skeptical about the surprising claim.", synonyms:"doubtful, dubious", antonyms:"credulous, convinced" },
+  { word:"versatile", pos:"adj.", meaning:"able to adapt to many different functions or situations", example:"A versatile employee can handle several different roles.", synonyms:"adaptable, flexible", antonyms:"limited, rigid" },
 ];
 
 /* ---------------- FIREBASE CONFIG ----------------
@@ -1413,8 +1464,15 @@ function renderFlash(section){
 
   let frontHTML, backHTML;
   if(section==='pv'){
-    frontHTML = `<div class="combo"><span class="verb">${escapeHtml(item.verb)}</span><span class="join">+</span><span class="particle">${escapeHtml(item.particle)}</span></div><div class="hint">tap to reveal meaning</div>`;
-    backHTML = `<div class="meaning">${escapeHtml(item.verb)} ${escapeHtml(item.particle)}</div><div class="meaning" style="font-size:1.05rem; font-weight:500; opacity:0.9;">${escapeHtml(item.meaning)}</div><div class="example">"${escapeHtml(item.example)}"</div>`;
+    const phoneticHTML = item.phonetic ? `<div class="phonetic-tag">${escapeHtml(item.phonetic)}</div>` : '';
+    frontHTML = `<div class="combo"><span class="verb">${escapeHtml(item.verb)}</span><span class="join">+</span><span class="particle">${escapeHtml(item.particle)}</span></div>${phoneticHTML}<div class="hint">tap to reveal meaning</div>`;
+
+    const synAntHTML = (item.synonym || item.antonym) ? `
+      <div class="syn-ant-row">
+        ${item.synonym ? `<div class="syn-ant-chip"><span class="syn-ant-label">Synonym</span>${escapeHtml(item.synonym)}</div>` : ''}
+        ${item.antonym ? `<div class="syn-ant-chip"><span class="syn-ant-label">Antonym</span>${escapeHtml(item.antonym)}</div>` : ''}
+      </div>` : '';
+    backHTML = `<div class="meaning">${escapeHtml(item.verb)} ${escapeHtml(item.particle)}</div><div class="meaning" style="font-size:1.05rem; font-weight:500; opacity:0.9;">${escapeHtml(item.meaning)}</div><div class="example">"${escapeHtml(item.example)}"</div>${synAntHTML}`;
   } else {
     frontHTML = `<div class="headword">${escapeHtml(item.word)}</div><div class="pos-tag">${escapeHtml(item.pos||'')}</div><div class="hint">tap to reveal meaning</div>`;
     backHTML = `<div class="meaning">${escapeHtml(item.meaning)}</div><div class="example">"${escapeHtml(item.example)}"</div>`;
@@ -1461,18 +1519,96 @@ function shuffleCards(section){
 /* ---------------- QUIZ ---------------- */
 function initQuizOrder(section){
   if(state[section].quizOrder.length===0){
-    state[section].quizOrder = shuffle(dataFor(section).map((_,i)=>i));
+    state[section].quizOrder = buildQuizQuestionPlan(section);
     state[section].quizIndex = 0;
     state[section].score = 0;
   }
 }
 
-function buildOptions(section, correctIdx){
+// Builds the full list of questions for a quiz run. Each question is
+// { wordIndex, type } where type is one of: meaning, synonym, antonym, fill-blank.
+// Only question types with enough usable data (e.g. a filled-in synonym field,
+// or at least 4 words total for multiple choice) are included.
+function buildQuizQuestionPlan(section){
   const data = dataFor(section);
-  const pool = data.map((_,i)=>i).filter(i=>i!==correctIdx);
-  const distractors = shuffle(pool).slice(0,3);
-  const options = shuffle([correctIdx, ...distractors]);
-  return options;
+  const plan = [];
+
+  data.forEach((item, idx) => {
+    plan.push({ wordIndex: idx, type: 'meaning' });
+    if(item.example && (section === 'pv' ? (item.verb) : item.word)){
+      plan.push({ wordIndex: idx, type: 'fill-blank' });
+    }
+    if(section === 'pv'){
+      if(item.synonym && item.synonym.trim()) plan.push({ wordIndex: idx, type: 'synonym' });
+      if(item.antonym && item.antonym.trim()) plan.push({ wordIndex: idx, type: 'antonym' });
+    }
+  });
+
+  return shuffle(plan);
+}
+
+// Builds 4 multiple-choice options (1 correct + 3 distractors) for a given
+// question, using values pulled from the same field so distractors are
+// plausible (e.g. other synonyms, not random meanings, for a synonym question).
+function buildOptionsForQuestion(section, question){
+  const data = dataFor(section);
+  const item = data[question.wordIndex];
+
+  function fieldValue(it, type){
+    if(type === 'meaning') return it.meaning;
+    if(type === 'synonym') return it.synonym;
+    if(type === 'antonym') return it.antonym;
+    if(type === 'fill-blank') return section === 'pv' ? `${it.verb} ${it.particle}` : it.word;
+    return it.meaning;
+  }
+
+  const correctValue = fieldValue(item, question.type);
+
+  // pool of other words that have a usable value for this same field
+  const pool = data
+    .map((it, i) => ({ it, i }))
+    .filter(({it, i}) => i !== question.wordIndex && fieldValue(it, question.type) && fieldValue(it, question.type).trim());
+
+  const distractors = shuffle(pool).slice(0, 3).map(({it}) => fieldValue(it, question.type));
+
+  // if not enough same-field distractors exist (e.g. too few words have synonyms filled),
+  // pad with meanings from other words so the quiz can still show 4 options
+  while(distractors.length < 3){
+    const fallbackPool = data.filter((_, i) => i !== question.wordIndex);
+    if(fallbackPool.length === 0) break;
+    const pick = fallbackPool[Math.floor(Math.random()*fallbackPool.length)];
+    const val = pick.meaning;
+    if(val && !distractors.includes(val) && val !== correctValue) distractors.push(val);
+    else break;
+  }
+
+  const options = shuffle([correctValue, ...distractors]);
+  return { options, correctValue };
+}
+
+function questionPromptText(section, question, item){
+  if(question.type === 'meaning'){
+    return section === 'pv'
+      ? `What does <strong>${escapeHtml(item.verb)} ${escapeHtml(item.particle)}</strong> mean?`
+      : `What does <strong>${escapeHtml(item.word)}</strong> mean?`;
+  }
+  if(question.type === 'synonym'){
+    return `Which word is a <strong>synonym</strong> of <strong>${escapeHtml(item.verb)} ${escapeHtml(item.particle)}</strong>?`;
+  }
+  if(question.type === 'antonym'){
+    return `Which word is an <strong>antonym</strong> of <strong>${escapeHtml(item.verb)} ${escapeHtml(item.particle)}</strong>?`;
+  }
+  if(question.type === 'fill-blank'){
+    const headword = section === 'pv' ? `${item.verb} ${item.particle}` : item.word;
+    // build a blanked-out version of the example sentence by replacing the headword (case-insensitive)
+    let blanked = item.example || '';
+    if(headword){
+      const re = new RegExp(headword.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'ig');
+      blanked = blanked.replace(re, '_____');
+    }
+    return `Fill in the blank: <br><span class="fill-blank-sentence">"${escapeHtml(blanked)}"</span>`;
+  }
+  return '';
 }
 
 function renderQuiz(section){
@@ -1506,25 +1642,24 @@ function renderQuiz(section){
     return;
   }
 
-  const idx = qOrder[state[section].quizIndex];
-  const item = data[idx];
+  const question = qOrder[state[section].quizIndex];
+  const item = data[question.wordIndex];
   state[section].answered = false;
   document.getElementById(section+'-progress').textContent =
     `question ${state[section].quizIndex+1} of ${qOrder.length}`;
 
-  const options = buildOptions(section, idx);
-  const promptText = section==='pv'
-    ? `What does <strong>${escapeHtml(item.verb)} ${escapeHtml(item.particle)}</strong> mean?`
-    : `What does <strong>${escapeHtml(item.word)}</strong> mean?`;
+  const { options, correctValue } = buildOptionsForQuestion(section, question);
+  const promptText = questionPromptText(section, question, item);
+  const typeLabel = { meaning:'Meaning', synonym:'Synonym', antonym:'Antonym', 'fill-blank':'Fill in the blank' }[question.type];
 
-  const optsHTML = options.map(oIdx => {
-    const opt = data[oIdx];
-    return `<button class="quiz-opt" data-idx="${oIdx}" onclick="answerQuiz('${section}', ${idx}, ${oIdx}, this)">${escapeHtml(opt.meaning)}</button>`;
+  const optsHTML = options.map(optValue => {
+    const isCorrect = optValue === correctValue;
+    return `<button class="quiz-opt" data-correct="${isCorrect}" onclick="answerQuiz('${section}', this)">${escapeHtml(optValue)}</button>`;
   }).join('');
 
   area.innerHTML = `
     <div class="quiz-question">
-      <div class="quiz-prompt-label">question ${state[section].quizIndex+1}</div>
+      <div class="quiz-prompt-label">question ${state[section].quizIndex+1} · ${typeLabel}</div>
       <div class="quiz-prompt">${promptText}</div>
     </div>
     <div class="quiz-options">${optsHTML}</div>
@@ -1535,17 +1670,17 @@ function renderQuiz(section){
   `;
 }
 
-function answerQuiz(section, correctIdx, chosenIdx, btnEl){
+function answerQuiz(section, btnEl){
   if(state[section].answered) return;
   state[section].answered = true;
   const buttons = document.querySelectorAll('#'+section+'-quiz-area .quiz-opt');
+  const chosenCorrect = btnEl.getAttribute('data-correct') === 'true';
   buttons.forEach(b=>{
     b.disabled = true;
-    const bIdx = parseInt(b.getAttribute('data-idx'));
-    if(bIdx === correctIdx) b.classList.add('correct');
-    else if(bIdx === chosenIdx) b.classList.add('incorrect');
+    if(b.getAttribute('data-correct') === 'true') b.classList.add('correct');
+    else if(b === btnEl) b.classList.add('incorrect');
   });
-  if(chosenIdx === correctIdx) state[section].score++;
+  if(chosenCorrect) state[section].score++;
   document.getElementById(section+'-next-q').style.display = 'inline-block';
 }
 
@@ -1555,7 +1690,7 @@ function nextQuizQuestion(section){
 }
 
 function restartQuiz(section){
-  state[section].quizOrder = shuffle(dataFor(section).map((_,i)=>i));
+  state[section].quizOrder = buildQuizQuestionPlan(section);
   state[section].quizIndex = 0;
   state[section].score = 0;
   renderQuiz(section);
@@ -1814,6 +1949,11 @@ function openEditWordForm(section, deckId, wordIndex){
       <div class="edit-field-row2">
         <input type="text" class="edit-input" data-field="verb" value="${escapeHtml(w.verb)}" placeholder="Verb">
         <input type="text" class="edit-input" data-field="particle" value="${escapeHtml(w.particle)}" placeholder="Particle">
+      </div>
+      <input type="text" class="edit-input" data-field="phonetic" value="${escapeHtml(w.phonetic||'')}" placeholder="Phonetic (optional)">
+      <div class="edit-field-row2">
+        <input type="text" class="edit-input" data-field="synonym" value="${escapeHtml(w.synonym||'')}" placeholder="Synonym (optional)">
+        <input type="text" class="edit-input" data-field="antonym" value="${escapeHtml(w.antonym||'')}" placeholder="Antonym (optional)">
       </div>`;
   } else {
     fieldsHtml = `
@@ -1862,7 +2002,10 @@ function saveWordEdit(section, deckId, wordIndex){
       verb: values.verb,
       particle: values.particle,
       meaning: values.meaning,
-      example: values.example || `${values.verb} ${values.particle}.`
+      example: values.example || `${values.verb} ${values.particle}.`,
+      phonetic: values.phonetic || '',
+      synonym: values.synonym || '',
+      antonym: values.antonym || ''
     };
   } else {
     if(!values.word){
@@ -2036,11 +2179,14 @@ function addWordFromForm(){
   if(section === 'pv'){
     const verb = document.getElementById('f-verb').value.trim();
     const particle = document.getElementById('f-particle').value.trim();
+    const phonetic = document.getElementById('f-phonetic').value.trim();
+    const synonym = document.getElementById('f-synonym').value.trim();
+    const antonym = document.getElementById('f-antonym').value.trim();
     if(!verb || !particle){
       showStatus('add-status', 'Please fill in both the verb and the particle.', false);
       return;
     }
-    entry = { verb, particle, meaning, example: example || `${verb} ${particle}.` };
+    entry = { verb, particle, meaning, example: example || `${verb} ${particle}.`, phonetic, synonym, antonym };
   } else {
     const word = document.getElementById('f-word').value.trim();
     const pos = document.getElementById('f-pos').value.trim();
@@ -2055,7 +2201,7 @@ function addWordFromForm(){
   saveDeckStore(section);
 
   // clear form
-  ['f-verb','f-particle','f-word','f-pos','f-meaning','f-example'].forEach(id=>{
+  ['f-verb','f-particle','f-phonetic','f-synonym','f-antonym','f-word','f-pos','f-meaning','f-example'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.value = '';
   });
@@ -2183,36 +2329,43 @@ function renderDocxPreview(){
 
   const colCount = Math.max(...docxParsedRows.map(r => r.length));
   const firstRowLooksLikeHeader = docxParsedRows[0].some(c =>
-    /^(word|verb|particle|meaning|definition|example|pos|part of speech)/i.test(c)
+    /^(stt|no\.?|cụm động từ|cum dong tu|word|verb|particle|meaning|definition|nghĩa|nghia|phiên âm|phien am|phonetic|đồng nghĩa|dong nghia|synonym|trái nghĩa|trai nghia|antonym|example|pos|part of speech)/i.test(c)
   );
   const dataRows = firstRowLooksLikeHeader ? docxParsedRows.slice(1) : docxParsedRows;
   const headerRow = firstRowLooksLikeHeader ? docxParsedRows[0] : null;
 
   const colOptionsHtml = (selectedGuess) => {
     const fields = section === 'pv'
-      ? [['','— none —'],['verb','Verb'],['particle','Particle'],['meaning','Meaning'],['example','Example']]
-      : [['','— none —'],['word','Word'],['pos','Part of speech'],['meaning','Meaning'],['example','Example']];
+      ? [['','— skip this column —'],['verb','Verb'],['particle','Particle'],['meaning','Meaning'],['phonetic','Phonetic'],['synonym','Synonym'],['antonym','Antonym'],['example','Example']]
+      : [['','— skip this column —'],['word','Word'],['pos','Part of speech'],['meaning','Meaning'],['example','Example']];
     return fields.map(([val,label]) =>
       `<option value="${val}" ${val===selectedGuess ? 'selected':''}>${label}</option>`
     ).join('');
   };
 
   // best-effort guess of which column maps to which field, based on header text if present
+  // (supports both English and Vietnamese headers, since teacher documents may use either)
   function guessField(colIndex){
     const headerText = headerRow ? headerRow[colIndex].toLowerCase() : '';
     if(section === 'pv'){
-      if(/verb/.test(headerText)) return 'verb';
+      if(/^(stt|no\.?)$/.test(headerText.trim())) return ''; // row-number column — skip by default
+      if(/cụm động từ|cum dong tu|verb/.test(headerText)) return 'verb';
       if(/particle/.test(headerText)) return 'particle';
-      if(/meaning|definition/.test(headerText)) return 'meaning';
-      if(/example/.test(headerText)) return 'example';
-      // fallback positional guess for a typical 4-column table
-      return ['verb','particle','meaning','example'][colIndex] || '';
+      if(/phiên âm|phien am|phonetic/.test(headerText)) return 'phonetic';
+      if(/đồng nghĩa|dong nghia|synonym/.test(headerText)) return 'synonym';
+      if(/trái nghĩa|trai nghia|antonym/.test(headerText)) return 'antonym';
+      if(/nghĩa|nghia|meaning|definition/.test(headerText)) return 'meaning';
+      if(/example|ví dụ|vi du/.test(headerText)) return 'example';
+      // fallback positional guess if there's no usable header text at all
+      if(!headerRow) return ['verb','particle','meaning','example'][colIndex] || '';
+      return '';
     } else {
-      if(/word/.test(headerText)) return 'word';
-      if(/part of speech|pos\b/.test(headerText)) return 'pos';
-      if(/meaning|definition/.test(headerText)) return 'meaning';
-      if(/example/.test(headerText)) return 'example';
-      return ['word','pos','meaning','example'][colIndex] || '';
+      if(/word|từ|tu\b/.test(headerText)) return 'word';
+      if(/part of speech|pos\b|từ loại|tu loai/.test(headerText)) return 'pos';
+      if(/nghĩa|nghia|meaning|definition/.test(headerText)) return 'meaning';
+      if(/example|ví dụ|vi du/.test(headerText)) return 'example';
+      if(!headerRow) return ['word','pos','meaning','example'][colIndex] || '';
+      return '';
     }
   }
 
@@ -2257,7 +2410,7 @@ function confirmDocxImport(){
   }
 
   const firstRowLooksLikeHeader = docxParsedRows[0].some(c =>
-    /^(word|verb|particle|meaning|definition|example|pos|part of speech)/i.test(c)
+    /^(stt|no\.?|cụm động từ|cum dong tu|word|verb|particle|meaning|definition|nghĩa|nghia|phiên âm|phien am|phonetic|đồng nghĩa|dong nghia|synonym|trái nghĩa|trai nghia|antonym|example|pos|part of speech)/i.test(c)
   );
   const dataRows = firstRowLooksLikeHeader ? docxParsedRows.slice(1) : docxParsedRows;
 
@@ -2282,8 +2435,15 @@ function confirmDocxImport(){
       const particle = (row[colMap.particle] || '').trim();
       const meaning = (row[colMap.meaning] || '').trim();
       const example = colMap.example !== undefined ? (row[colMap.example] || '').trim() : '';
+      const phonetic = colMap.phonetic !== undefined ? (row[colMap.phonetic] || '').trim() : '';
+      const synonym = colMap.synonym !== undefined ? (row[colMap.synonym] || '').trim() : '';
+      const antonym = colMap.antonym !== undefined ? (row[colMap.antonym] || '').trim() : '';
       if(!verb || !particle || !meaning){ skipped++; return; }
-      deckStore.pv.decks[targetDeckId].words.push({ verb, particle, meaning, example: example || `${verb} ${particle}.` });
+      deckStore.pv.decks[targetDeckId].words.push({
+        verb, particle, meaning,
+        example: example || `${verb} ${particle}.`,
+        phonetic, synonym, antonym
+      });
       added++;
     } else {
       const word = (row[colMap.word] || '').trim();
@@ -2355,9 +2515,13 @@ function confirmCsvImport(){
       for(let i=startIdx;i<lines.length;i++){
         const cols = parseCsvLine(lines[i]);
         if(section === 'pv'){
-          const [verb, particle, meaning, example] = cols;
+          const [verb, particle, meaning, example, phonetic, synonym, antonym] = cols;
           if(!verb || !particle || !meaning){ skipped++; continue; }
-          deckStore.pv.decks[targetDeckId].words.push({ verb:verb.trim(), particle:particle.trim(), meaning:meaning.trim(), example:(example||'').trim() || `${verb} ${particle}.` });
+          deckStore.pv.decks[targetDeckId].words.push({
+            verb:verb.trim(), particle:particle.trim(), meaning:meaning.trim(),
+            example:(example||'').trim() || `${verb} ${particle}.`,
+            phonetic:(phonetic||'').trim(), synonym:(synonym||'').trim(), antonym:(antonym||'').trim()
+          });
           added++;
         } else {
           const [word, pos, meaning, example] = cols;
