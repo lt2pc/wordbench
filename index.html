@@ -1465,14 +1465,17 @@ function renderFlash(section){
   let frontHTML, backHTML;
   if(section==='pv'){
     const phoneticHTML = item.phonetic ? `<div class="phonetic-tag">${escapeHtml(item.phonetic)}</div>` : '';
-    frontHTML = `<div class="combo"><span class="verb">${escapeHtml(item.verb)}</span><span class="join">+</span><span class="particle">${escapeHtml(item.particle)}</span></div>${phoneticHTML}<div class="hint">tap to reveal meaning</div>`;
+    const comboHTML = item.particle
+      ? `<span class="verb">${escapeHtml(item.verb)}</span><span class="join">+</span><span class="particle">${escapeHtml(item.particle)}</span>`
+      : `<span class="verb">${escapeHtml(item.verb)}</span>`;
+    frontHTML = `<div class="combo">${comboHTML}</div>${phoneticHTML}<div class="hint">tap to reveal meaning</div>`;
 
     const synAntHTML = (item.synonym || item.antonym) ? `
       <div class="syn-ant-row">
         ${item.synonym ? `<div class="syn-ant-chip"><span class="syn-ant-label">Synonym</span>${escapeHtml(item.synonym)}</div>` : ''}
         ${item.antonym ? `<div class="syn-ant-chip"><span class="syn-ant-label">Antonym</span>${escapeHtml(item.antonym)}</div>` : ''}
       </div>` : '';
-    backHTML = `<div class="meaning">${escapeHtml(item.verb)} ${escapeHtml(item.particle)}</div><div class="meaning" style="font-size:1.05rem; font-weight:500; opacity:0.9;">${escapeHtml(item.meaning)}</div><div class="example">"${escapeHtml(item.example)}"</div>${synAntHTML}`;
+    backHTML = `<div class="meaning">${escapeHtml(pvHeadword(item))}</div><div class="meaning" style="font-size:1.05rem; font-weight:500; opacity:0.9;">${escapeHtml(item.meaning)}</div><div class="example">"${escapeHtml(item.example)}"</div>${synAntHTML}`;
   } else {
     frontHTML = `<div class="headword">${escapeHtml(item.word)}</div><div class="pos-tag">${escapeHtml(item.pos||'')}</div><div class="hint">tap to reveal meaning</div>`;
     backHTML = `<div class="meaning">${escapeHtml(item.meaning)}</div><div class="example">"${escapeHtml(item.example)}"</div>`;
@@ -1589,26 +1592,128 @@ function buildOptionsForQuestion(section, question){
 function questionPromptText(section, question, item){
   if(question.type === 'meaning'){
     return section === 'pv'
-      ? `What does <strong>${escapeHtml(item.verb)} ${escapeHtml(item.particle)}</strong> mean?`
+      ? `What does <strong>${escapeHtml(pvHeadword(item))}</strong> mean?`
       : `What does <strong>${escapeHtml(item.word)}</strong> mean?`;
   }
   if(question.type === 'synonym'){
-    return `Which word is a <strong>synonym</strong> of <strong>${escapeHtml(item.verb)} ${escapeHtml(item.particle)}</strong>?`;
+    return `Which word is a <strong>synonym</strong> of <strong>${escapeHtml(pvHeadword(item))}</strong>?`;
   }
   if(question.type === 'antonym'){
-    return `Which word is an <strong>antonym</strong> of <strong>${escapeHtml(item.verb)} ${escapeHtml(item.particle)}</strong>?`;
+    return `Which word is an <strong>antonym</strong> of <strong>${escapeHtml(pvHeadword(item))}</strong>?`;
   }
   if(question.type === 'fill-blank'){
-    const headword = section === 'pv' ? `${item.verb} ${item.particle}` : item.word;
-    // build a blanked-out version of the example sentence by replacing the headword (case-insensitive)
-    let blanked = item.example || '';
-    if(headword){
-      const re = new RegExp(headword.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'ig');
-      blanked = blanked.replace(re, '_____');
-    }
-    return `Fill in the blank: <br><span class="fill-blank-sentence">"${escapeHtml(blanked)}"</span>`;
+    const blanked = blankOutHeadword(section, item);
+    return `Fill in the blank (use the present-tense form):<br><span class="fill-blank-sentence">"${escapeHtml(blanked)}"</span>`;
   }
   return '';
+}
+
+// Finds the verb (in whatever tense it appears in the example sentence) and the
+// particle, and replaces them with a blank. Since decks store the present-tense
+// headword (e.g. "bring up") but example sentences are natural writing and often
+// use other tenses (e.g. "brought up the topic"), this matches loosely on the
+// verb's word stem rather than requiring an exact phrase match.
+// Common irregular English verbs mapped to their past tense and past participle
+// forms, so fill-in-the-blank can recognize "brought" as a form of "bring" even
+// though the letters don't share a simple prefix. Covers the verbs most likely
+// to appear in phrasal verb lists.
+const IRREGULAR_VERB_FORMS = {
+  bring:['brought'], build:['built'], buy:['bought'], catch:['caught'],
+  come:['came'], cut:['cut'], do:['did','done'], draw:['drew','drawn'],
+  drive:['drove','driven'], eat:['ate','eaten'], fall:['fell','fallen'],
+  feel:['felt'], find:['found'], get:['got','gotten'], give:['gave','given'],
+  go:['went','gone'], grow:['grew','grown'], have:['had'], hear:['heard'],
+  hold:['held'], keep:['kept'], know:['knew','known'], leave:['left'],
+  let:['let'], look:['looked'], make:['made'], meet:['met'], pay:['paid'],
+  put:['put'], read:['read'], run:['ran'], say:['said'], see:['saw','seen'],
+  sell:['sold'], send:['sent'], set:['set'], show:['showed','shown'],
+  sit:['sat'], speak:['spoke','spoken'], stand:['stood'], take:['took','taken'],
+  tell:['told'], think:['thought'], throw:['threw','thrown'],
+  turn:['turned'], wake:['woke','woken'], wear:['wore','worn'],
+  win:['won'], write:['wrote','written'], break:['broke','broken'],
+  hang:['hung'], lay:['laid'], lead:['led'], lose:['lost'],
+  ring:['rang','rung'], rise:['rose','risen'], shut:['shut'],
+  spend:['spent'], stick:['stuck'], swear:['swore','sworn'],
+  sweep:['swept'], teach:['taught'], tear:['tore','torn'],
+  wind:['wound'], burst:['burst'], cast:['cast'], deal:['dealt'],
+  dig:['dug'], feed:['fed'], fight:['fought'], fly:['flew','flown'],
+  forget:['forgot','forgotten'], freeze:['froze','frozen'], hide:['hid','hidden'],
+  hit:['hit'], hurt:['hurt'], kneel:['knelt'], lend:['lent'],
+  lie:['lay','lain'], light:['lit'], mean:['meant'], quit:['quit'],
+  shake:['shook','shaken'], shine:['shone'], shoot:['shot'], sing:['sang','sung'],
+  sink:['sank','sunk'], sleep:['slept'], slide:['slid'], smell:['smelt'],
+  spread:['spread'], spring:['sprang','sprung'], steal:['stole','stolen'],
+  strike:['struck'], swim:['swam','swum'], swing:['swung'], understand:['understood'],
+  weep:['wept']
+};
+
+// Returns every plausible inflected form of a verb (base, -s, -ing, -ed, and any
+// irregular forms) so the sentence-matching can recognize the verb regardless
+// of the tense the teacher happened to write the example sentence in.
+function verbFormsFor(verb){
+  const v = verb.toLowerCase();
+  const forms = new Set([v]);
+  forms.add(v + 's');
+  forms.add(v.replace(/e$/,'') + 'ing');
+  forms.add(v + 'ing');
+  forms.add(v.replace(/e$/,'') + 'ed');
+  forms.add(v + 'ed');
+  if(IRREGULAR_VERB_FORMS[v]) IRREGULAR_VERB_FORMS[v].forEach(f => forms.add(f));
+  return Array.from(forms);
+}
+
+function blankOutHeadword(section, item){
+  const example = item.example || '';
+
+  if(section === 'vc'){
+    if(!item.word) return example;
+    const re = new RegExp(item.word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'ig');
+    return example.replace(re, '_____');
+  }
+
+  if(!item.verb) return example;
+
+  const words = example.split(/(\s+)/); // keep whitespace tokens so we can rejoin cleanly
+  const verbFormSet = verbFormsFor(item.verb);
+  const particleWords = (item.particle || '').toLowerCase().split(/\s+/).filter(Boolean);
+
+  let verbTokenIdx = -1;
+  for(let i=0; i<words.length; i++){
+    const clean = words[i].toLowerCase().replace(/[^a-z]/g,'');
+    if(clean && verbFormSet.includes(clean)){ verbTokenIdx = i; break; }
+  }
+
+  if(verbTokenIdx === -1){
+    // couldn't confidently find the verb in the sentence — fall back to blanking
+    // the exact stored headword if it happens to appear verbatim, otherwise leave as-is
+    const headword = pvHeadword(item);
+    if(headword && example.toLowerCase().includes(headword.toLowerCase())){
+      const re = new RegExp(headword.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'i');
+      return example.replace(re, '_____');
+    }
+    return example;
+  }
+
+  // blank the verb token, then also blank the particle if it appears shortly after
+  const outTokens = words.slice();
+  outTokens[verbTokenIdx] = '_____';
+
+  if(particleWords.length){
+    let searchIdx = verbTokenIdx + 1;
+    for(let p=0; p<particleWords.length && searchIdx < outTokens.length; p++){
+      // scan forward a little to allow for small gaps (e.g. "brought it up")
+      for(let look=searchIdx; look<Math.min(searchIdx+4, outTokens.length); look++){
+        const clean = outTokens[look].toLowerCase().replace(/[^a-z]/g,'');
+        if(clean === particleWords[p]){
+          outTokens[look] = '';
+          searchIdx = look + 1;
+          break;
+        }
+      }
+    }
+  }
+
+  return outTokens.join('').replace(/\s{2,}/g,' ').trim();
 }
 
 function renderQuiz(section){
@@ -1697,6 +1802,11 @@ function restartQuiz(section){
 }
 
 /* ---------------- UTIL ---------------- */
+// Joins verb + particle for display, omitting the extra space when there's no particle
+function pvHeadword(item){
+  return item.particle ? `${item.verb} ${item.particle}` : item.verb;
+}
+
 function escapeHtml(str){
   if(str===undefined || str===null) return '';
   return String(str)
@@ -2336,7 +2446,7 @@ function renderDocxPreview(){
 
   const colOptionsHtml = (selectedGuess) => {
     const fields = section === 'pv'
-      ? [['','— skip this column —'],['verb','Verb'],['particle','Particle'],['meaning','Meaning'],['phonetic','Phonetic'],['synonym','Synonym'],['antonym','Antonym'],['example','Example']]
+      ? [['','— skip this column —'],['verbphrase','Verb + Particle (combined, e.g. "give up")'],['verb','Verb only (e.g. "give")'],['particle','Particle only (e.g. "up", "in", "forward to")'],['meaning','Meaning'],['phonetic','Phonetic'],['synonym','Synonym'],['antonym','Antonym'],['example','Example']]
       : [['','— skip this column —'],['word','Word'],['pos','Part of speech'],['meaning','Meaning'],['example','Example']];
     return fields.map(([val,label]) =>
       `<option value="${val}" ${val===selectedGuess ? 'selected':''}>${label}</option>`
@@ -2349,7 +2459,8 @@ function renderDocxPreview(){
     const headerText = headerRow ? headerRow[colIndex].toLowerCase() : '';
     if(section === 'pv'){
       if(/^(stt|no\.?)$/.test(headerText.trim())) return ''; // row-number column — skip by default
-      if(/cụm động từ|cum dong tu|verb/.test(headerText)) return 'verb';
+      if(/cụm động từ|cum dong tu/.test(headerText)) return 'verbphrase';
+      if(/^verb$/.test(headerText.trim()) || /\bverb\b/.test(headerText)) return 'verb';
       if(/particle/.test(headerText)) return 'particle';
       if(/phiên âm|phien am|phonetic/.test(headerText)) return 'phonetic';
       if(/đồng nghĩa|dong nghia|synonym/.test(headerText)) return 'synonym';
@@ -2421,8 +2532,14 @@ function confirmDocxImport(){
     if(field) colMap[field] = parseInt(sel.getAttribute('data-col'), 10);
   });
 
-  const requiredFields = section === 'pv' ? ['verb','particle','meaning'] : ['word','meaning'];
+  const hasVerbPhrase = colMap.verbphrase !== undefined;
+  const hasSeparateVerbParticle = colMap.verb !== undefined && colMap.particle !== undefined;
+
+  const requiredFields = section === 'pv' ? ['meaning'] : ['word','meaning'];
   const missing = requiredFields.filter(f => colMap[f] === undefined);
+  if(section === 'pv' && !hasVerbPhrase && !hasSeparateVerbParticle){
+    missing.unshift('Verb + Particle (either as one combined column, or two separate columns)');
+  }
   if(missing.length > 0){
     showStatus('import-status', `Please map a column to: ${missing.join(', ')}.`, false);
     return;
@@ -2431,17 +2548,25 @@ function confirmDocxImport(){
   let added = 0, skipped = 0;
   dataRows.forEach(row => {
     if(section === 'pv'){
-      const verb = (row[colMap.verb] || '').trim();
-      const particle = (row[colMap.particle] || '').trim();
+      let verb = '', particle = '';
+      if(hasVerbPhrase){
+        const phrase = (row[colMap.verbphrase] || '').trim();
+        const parts = phrase.split(/\s+/);
+        verb = parts[0] || '';
+        particle = parts.slice(1).join(' ') || '';
+      } else {
+        verb = (row[colMap.verb] || '').trim();
+        particle = (row[colMap.particle] || '').trim();
+      }
       const meaning = (row[colMap.meaning] || '').trim();
       const example = colMap.example !== undefined ? (row[colMap.example] || '').trim() : '';
       const phonetic = colMap.phonetic !== undefined ? (row[colMap.phonetic] || '').trim() : '';
       const synonym = colMap.synonym !== undefined ? (row[colMap.synonym] || '').trim() : '';
       const antonym = colMap.antonym !== undefined ? (row[colMap.antonym] || '').trim() : '';
-      if(!verb || !particle || !meaning){ skipped++; return; }
+      if(!verb || !meaning){ skipped++; return; }
       deckStore.pv.decks[targetDeckId].words.push({
         verb, particle, meaning,
-        example: example || `${verb} ${particle}.`,
+        example: example || `${verb}${particle ? ' '+particle : ''}.`,
         phonetic, synonym, antonym
       });
       added++;
