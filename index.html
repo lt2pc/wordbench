@@ -307,7 +307,7 @@
   .flip-card{
     width:100%;
     max-width:520px;
-    height:300px;
+    height:360px;
     perspective:1400px;
     cursor:pointer;
     transition: transform 0.25s ease;
@@ -329,9 +329,10 @@
     flex-direction:column;
     align-items:center;
     justify-content:center;
-    padding:28px;
+    padding:32px 30px;
     text-align:center;
     box-shadow:var(--shadow);
+    gap:2px;
   }
   #pv-panel .face.front{ background:var(--paper); border-color: rgba(255,90,60,0.35); }
   #vc-panel .face.front{ background:var(--paper); border-color: rgba(91,79,232,0.35); }
@@ -367,6 +368,19 @@
     border-bottom:4px solid var(--pv-primary);
     text-shadow: 0 0 20px rgba(255,90,60,0.3);
   }
+  .level-badge{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.7rem;
+    font-weight:700;
+    letter-spacing:0.03em;
+    color:var(--vc-primary-deep);
+    background:rgba(91,79,232,0.12);
+    border:1.5px solid rgba(91,79,232,0.3);
+    border-radius:999px;
+    padding:3px 10px;
+    align-self:flex-start;
+    margin-top:4px;
+  }
   .flip-card.flipped .combo{ transform: scale(0.001); transition: transform 0.01s; }
 
   .headword{
@@ -401,42 +415,70 @@
 
   .syn-ant-row{
     display:flex;
-    gap:10px;
-    margin-top:14px;
+    gap:12px;
     flex-wrap:wrap;
     justify-content:center;
+    width:100%;
+    margin-top:4px;
   }
   .syn-ant-chip{
-    background:rgba(255,255,255,0.18);
-    border:1.5px solid rgba(255,255,255,0.35);
-    border-radius:12px;
-    padding:8px 14px;
-    font-size:0.85rem;
-    font-weight:600;
-    max-width:200px;
+    background:rgba(255,255,255,0.22);
+    border:1.5px solid rgba(255,255,255,0.4);
+    border-radius:14px;
+    padding:11px 16px;
+    font-size:0.92rem;
+    font-weight:700;
+    flex:1 1 140px;
+    max-width:220px;
+    text-align:left;
+    line-height:1.35;
+    backdrop-filter: blur(4px);
+  }
+  .syn-chip{
+    background:rgba(139,212,80,0.32);
+    border-color:rgba(139,212,80,0.7);
+  }
+  .ant-chip{
+    background:rgba(255,77,109,0.28);
+    border-color:rgba(255,77,109,0.65);
   }
   .syn-ant-label{
     display:block;
     font-family:'JetBrains Mono', monospace;
-    font-size:0.68rem;
+    font-size:0.62rem;
     text-transform:uppercase;
-    letter-spacing:0.05em;
-    opacity:0.8;
-    font-weight:700;
-    margin-bottom:2px;
+    letter-spacing:0.08em;
+    opacity:0.95;
+    font-weight:800;
+    margin-bottom:4px;
   }
+  .syn-chip .syn-ant-label::before{ content:"✓ "; }
+  .ant-chip .syn-ant-label::before{ content:"✕ "; }
 
-  .meaning{
-    font-size:1.3rem;
+  .back-headword{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.72rem;
     font-weight:600;
-    margin-bottom:10px;
-    line-height:1.35;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    opacity:0.6;
+    margin-bottom:6px;
   }
-  .example{
-    font-size:0.98rem;
-    opacity:0.9;
+  .back-meaning{
+    font-family:'Fraunces', serif;
+    font-size:1.75rem;
+    font-weight:700;
+    line-height:1.25;
+    margin-bottom:20px;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  }
+  .back-example{
+    font-size:0.85rem;
+    opacity:0.7;
     font-style:italic;
-    line-height:1.5;
+    line-height:1.55;
+    margin-top:18px;
+    max-width:340px;
   }
 
   .card-controls{
@@ -944,7 +986,7 @@
   @media (max-width:600px){
     .combo{ font-size:1.5rem; }
     .headword{ font-size:1.7rem; }
-    .flip-card{ height:280px; }
+    .flip-card{ height:340px; }
     .field-row2{ grid-template-columns:1fr; }
     .modal{ padding:22px; }
   }
@@ -1465,20 +1507,26 @@ function renderFlash(section){
   let frontHTML, backHTML;
   if(section==='pv'){
     const phoneticHTML = item.phonetic ? `<div class="phonetic-tag">${escapeHtml(item.phonetic)}</div>` : '';
-    const comboHTML = item.particle
-      ? `<span class="verb">${escapeHtml(item.verb)}</span><span class="join">+</span><span class="particle">${escapeHtml(item.particle)}</span>`
-      : `<span class="verb">${escapeHtml(item.verb)}</span>`;
-    frontHTML = `<div class="combo">${comboHTML}</div>${phoneticHTML}<div class="hint">tap to reveal meaning</div>`;
+    const { verb: cleanVerb, particle: cleanParticle, level } = pvHeadwordAndLevel(item);
+    const levelBadgeHTML = level ? `<span class="level-badge">${escapeHtml(level)}</span>` : '';
+    const comboHTML = cleanParticle
+      ? `<span class="verb">${escapeHtml(cleanVerb)}</span><span class="join">+</span><span class="particle">${escapeHtml(cleanParticle)}</span>`
+      : `<span class="verb">${escapeHtml(cleanVerb)}</span>`;
+    frontHTML = `<div class="combo">${comboHTML}${levelBadgeHTML}</div>${phoneticHTML}<div class="hint">tap to reveal meaning</div>`;
 
     const synAntHTML = (item.synonym || item.antonym) ? `
       <div class="syn-ant-row">
-        ${item.synonym ? `<div class="syn-ant-chip"><span class="syn-ant-label">Synonym</span>${escapeHtml(item.synonym)}</div>` : ''}
-        ${item.antonym ? `<div class="syn-ant-chip"><span class="syn-ant-label">Antonym</span>${escapeHtml(item.antonym)}</div>` : ''}
+        ${item.synonym ? `<div class="syn-ant-chip syn-chip"><span class="syn-ant-label">Synonym</span>${escapeHtml(item.synonym)}</div>` : ''}
+        ${item.antonym ? `<div class="syn-ant-chip ant-chip"><span class="syn-ant-label">Antonym</span>${escapeHtml(item.antonym)}</div>` : ''}
       </div>` : '';
-    backHTML = `<div class="meaning">${escapeHtml(pvHeadword(item))}</div><div class="meaning" style="font-size:1.05rem; font-weight:500; opacity:0.9;">${escapeHtml(item.meaning)}</div><div class="example">"${escapeHtml(item.example)}"</div>${synAntHTML}`;
+    backHTML = `
+      <div class="back-headword">${escapeHtml(pvHeadword(item))}</div>
+      <div class="back-meaning">${escapeHtml(item.meaning)}</div>
+      ${synAntHTML}
+      <div class="back-example">"${escapeHtml(item.example)}"</div>`;
   } else {
     frontHTML = `<div class="headword">${escapeHtml(item.word)}</div><div class="pos-tag">${escapeHtml(item.pos||'')}</div><div class="hint">tap to reveal meaning</div>`;
-    backHTML = `<div class="meaning">${escapeHtml(item.meaning)}</div><div class="example">"${escapeHtml(item.example)}"</div>`;
+    backHTML = `<div class="back-meaning">${escapeHtml(item.meaning)}</div><div class="back-example">"${escapeHtml(item.example)}"</div>`;
   }
 
   area.innerHTML = `
@@ -1671,11 +1719,12 @@ function blankOutHeadword(section, item){
     return example.replace(re, '_____');
   }
 
-  if(!item.verb) return example;
+  const { verb: cleanVerb, particle: cleanParticle } = pvHeadwordAndLevel(item);
+  if(!cleanVerb) return example;
 
   const words = example.split(/(\s+)/); // keep whitespace tokens so we can rejoin cleanly
-  const verbFormSet = verbFormsFor(item.verb);
-  const particleWords = (item.particle || '').toLowerCase().split(/\s+/).filter(Boolean);
+  const verbFormSet = verbFormsFor(cleanVerb);
+  const particleWords = cleanParticle.toLowerCase().split(/\s+/).filter(Boolean);
 
   let verbTokenIdx = -1;
   for(let i=0; i<words.length; i++){
@@ -1804,7 +1853,34 @@ function restartQuiz(section){
 /* ---------------- UTIL ---------------- */
 // Joins verb + particle for display, omitting the extra space when there's no particle
 function pvHeadword(item){
-  return item.particle ? `${item.verb} ${item.particle}` : item.verb;
+  const { verb, particle } = pvHeadwordAndLevel(item);
+  return particle ? `${verb} ${particle}` : verb;
+}
+
+// Recognizes a CEFR level tag (A1, A2, B1, B2, C1, C2) at the end of a string,
+// e.g. "back at (C1)" -> { text: "back at", level: "C1" }. Falls back to
+// returning the text unchanged with no level if nothing matches, so this is
+// safe to run on any string without breaking normal words.
+const CEFR_LEVEL_RE = /\s*[\(\[]?\s*(A1|A2|B1|B2|C1|C2)\s*[\)\]]?\s*$/i;
+function splitLevelTag(text){
+  if(!text) return { text: text || '', level: '' };
+  const match = text.match(CEFR_LEVEL_RE);
+  if(match){
+    return { text: text.slice(0, match.index).trim(), level: match[1].toUpperCase() };
+  }
+  return { text: text.trim(), level: '' };
+}
+
+// Returns the particle with any trailing level tag removed, plus the level
+// tag itself if one was found (checked on both verb and particle, since
+// teachers may put the level tag on either one depending on their table).
+function pvHeadwordAndLevel(item){
+  const verbSplit = splitLevelTag(item.verb || '');
+  const particleSplit = splitLevelTag(item.particle || '');
+  const level = verbSplit.level || particleSplit.level || '';
+  const verb = verbSplit.text || item.verb || '';
+  const particle = particleSplit.text || item.particle || '';
+  return { verb, particle, level };
 }
 
 function escapeHtml(str){
