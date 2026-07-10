@@ -16,15 +16,22 @@
     --paper:#FFFBF2;
     --paper-dim:#FFF3DC;
 
-    /* Phrasal verbs — coral/orange family: high arousal, action-oriented (Mars energy) */
-    --pv-primary:#FF5A3C;
-    --pv-primary-deep:#E6431F;
-    --pv-accent:#FF8A3D;
+    /* Brand accent — matches Springboard's hot pink/magenta identity, used for
+       shared UI chrome (Teacher tools, mode picker, generic primary actions) */
+    --brand-primary:#EC4899;
+    --brand-primary-deep:#D6297A;
+    --brand-accent:#F472B6;
+    --brand-wash:#FDF2F8;
 
-    /* Vocabulary — electric blue/violet family: associated with focus & retention */
-    --vc-primary:#5B4FE8;
-    --vc-primary-deep:#4335D6;
-    --vc-accent:#8B5CF6;
+    /* Phrasal verbs — Springboard pink/magenta, the app's primary brand tone */
+    --pv-primary:#EC4899;
+    --pv-primary-deep:#D6297A;
+    --pv-accent:#F472B6;
+
+    /* Vocabulary — deeper rose/berry, same pink family, distinct shade for section separation */
+    --vc-primary:#BE185D;
+    --vc-primary-deep:#9D174D;
+    --vc-accent:#DB2777;
 
     /* Shared accents */
     --success:#8BD450;
@@ -33,8 +40,8 @@
     --danger-deep:#E0304F;
 
     /* Legacy aliases kept for anything not yet re-themed */
-    --marigold:#FF8A3D;
-    --marigold-deep:#E6431F;
+    --marigold:var(--brand-accent);
+    --marigold-deep:var(--brand-primary-deep);
     --sage:#8BD450;
     --sage-deep:#65B32E;
     --clay:#FF4D6D;
@@ -50,6 +57,11 @@
     --paper:#120E1E;
     --paper-dim:#1C1630;
 
+    --brand-primary:#F472B6;
+    --brand-primary-deep:#F472B6;
+    --brand-accent:#F9A8D4;
+    --brand-wash:#2A1622;
+
     --pv-primary:#FF7A5C;
     --pv-primary-deep:#FF7A5C;
     --pv-accent:#FFA85C;
@@ -63,8 +75,8 @@
     --danger:#FF6B85;
     --danger-deep:#FF6B85;
 
-    --marigold:#FFA85C;
-    --marigold-deep:#FFA85C;
+    --marigold:var(--brand-accent);
+    --marigold-deep:var(--brand-primary-deep);
     --sage:#A3E86B;
     --sage-deep:#A3E86B;
     --clay:#FF6B85;
@@ -83,10 +95,10 @@
   body{
     margin:0;
     background:
-      radial-gradient(circle at 8% 12%, rgba(255,90,60,0.16) 0%, transparent 45%),
-      radial-gradient(circle at 92% 18%, rgba(91,79,232,0.16) 0%, transparent 45%),
-      radial-gradient(circle at 15% 85%, rgba(139,212,80,0.14) 0%, transparent 40%),
-      radial-gradient(circle at 88% 92%, rgba(255,77,109,0.12) 0%, transparent 40%),
+      radial-gradient(circle at 8% 12%, rgba(236,72,153,0.16) 0%, transparent 45%),
+      radial-gradient(circle at 92% 18%, rgba(190,24,93,0.14) 0%, transparent 45%),
+      radial-gradient(circle at 15% 85%, rgba(139,212,80,0.12) 0%, transparent 40%),
+      radial-gradient(circle at 88% 92%, rgba(244,114,182,0.16) 0%, transparent 40%),
       var(--paper);
     background-attachment: fixed;
     color:var(--ink);
@@ -95,7 +107,7 @@
     min-height:100vh;
   }
 
-  ::selection{ background:var(--marigold); color:var(--ink); }
+  ::selection{ background:var(--brand-accent); color:var(--ink); }
 
   .toast{
     position:fixed;
@@ -141,20 +153,20 @@
     font-weight:700;
     font-size:1.9rem;
     letter-spacing:-0.01em;
-    background: linear-gradient(100deg, var(--pv-primary) 0%, var(--vc-primary) 60%, var(--pv-primary) 100%);
+    background: linear-gradient(100deg, var(--brand-primary-deep) 0%, var(--pv-accent) 30%, var(--brand-primary) 55%, var(--vc-primary-deep) 85%, var(--brand-primary-deep) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    background-size: 200% auto;
-    animation: brandShimmer 6s ease-in-out infinite;
+    background-size: 250% auto;
+    animation: brandShimmer 7s ease-in-out infinite;
   }
   @keyframes brandShimmer{
     0%,100%{ background-position: 0% center; }
     50%{ background-position: 100% center; }
   }
   .brand .dot{
-    color:var(--pv-primary-deep);
-    -webkit-text-fill-color: var(--pv-primary-deep);
+    color:var(--brand-primary-deep);
+    -webkit-text-fill-color: var(--brand-primary-deep);
   }
   .tagline{
     font-family:'JetBrains Mono', monospace;
@@ -197,18 +209,18 @@
   }
   .tab:hover{ border-color: var(--ink); color:var(--ink); transform:translateY(-2px); }
   .tab[aria-selected="true"].pv{
-    background: linear-gradient(135deg, var(--pv-primary), var(--pv-accent));
-    border-color:var(--pv-primary-deep);
+    background: linear-gradient(135deg, var(--brand-primary), var(--brand-accent));
+    border-color:var(--brand-primary-deep);
     color:#fff;
     transform:scale(1.06);
-    box-shadow: 0 8px 24px rgba(255,90,60,0.4);
+    box-shadow: 0 8px 24px rgba(236,72,153,0.4);
   }
   .tab[aria-selected="true"].vc{
     background: linear-gradient(135deg, var(--vc-primary), var(--vc-accent));
     border-color:var(--vc-primary-deep);
     color:#fff;
     transform:scale(1.06);
-    box-shadow: 0 8px 24px rgba(91,79,232,0.4);
+    box-shadow: 0 8px 24px rgba(190,24,93,0.4);
   }
 
   main{
@@ -273,8 +285,8 @@
     cursor:pointer;
     transition: all 0.2s ease;
   }
-  #pv-panel .mode-btn.active{ background: linear-gradient(135deg, var(--pv-primary), var(--pv-accent)); color:#fff; box-shadow: 0 4px 14px rgba(255,90,60,0.35); }
-  #vc-panel .mode-btn.active{ background: linear-gradient(135deg, var(--vc-primary), var(--vc-accent)); color:#fff; box-shadow: 0 4px 14px rgba(91,79,232,0.35); }
+  #pv-panel .mode-btn.active{ background: linear-gradient(135deg, var(--pv-primary), var(--pv-accent)); color:#fff; box-shadow: 0 4px 14px rgba(236,72,153,0.35); }
+  #vc-panel .mode-btn.active{ background: linear-gradient(135deg, var(--vc-primary), var(--vc-accent)); color:#fff; box-shadow: 0 4px 14px rgba(190,24,93,0.35); }
 
   .progress-tag{
     font-family:'JetBrains Mono', monospace;
@@ -334,18 +346,18 @@
     box-shadow:var(--shadow);
     gap:2px;
   }
-  #pv-panel .face.front{ background:var(--paper); border-color: rgba(255,90,60,0.35); }
-  #vc-panel .face.front{ background:var(--paper); border-color: rgba(91,79,232,0.35); }
+  #pv-panel .face.front{ background:var(--paper); border-color: rgba(236,72,153,0.35); }
+  #vc-panel .face.front{ background:var(--paper); border-color: rgba(190,24,93,0.35); }
   .face.back{ transform: rotateY(180deg); border:none; }
   #pv-panel .face.back{
     background: linear-gradient(135deg, var(--pv-primary) 0%, var(--pv-accent) 100%);
     color:#fff;
-    box-shadow: 0 20px 50px rgba(255,90,60,0.45);
+    box-shadow: 0 20px 50px rgba(236,72,153,0.45);
   }
   #vc-panel .face.back{
     background: linear-gradient(135deg, var(--vc-primary) 0%, var(--vc-accent) 100%);
     color:#fff;
-    box-shadow: 0 20px 50px rgba(91,79,232,0.45);
+    box-shadow: 0 20px 50px rgba(190,24,93,0.45);
   }
 
   .combo{
@@ -366,7 +378,7 @@
   .combo .particle{
     color:var(--pv-primary-deep);
     border-bottom:4px solid var(--pv-primary);
-    text-shadow: 0 0 20px rgba(255,90,60,0.3);
+    text-shadow: 0 0 20px rgba(236,72,153,0.3);
   }
   .level-badge{
     font-family:'JetBrains Mono', monospace;
@@ -374,8 +386,8 @@
     font-weight:700;
     letter-spacing:0.03em;
     color:var(--vc-primary-deep);
-    background:rgba(91,79,232,0.12);
-    border:1.5px solid rgba(91,79,232,0.3);
+    background:rgba(190,24,93,0.12);
+    border:1.5px solid rgba(190,24,93,0.3);
     border-radius:999px;
     padding:3px 10px;
     align-self:flex-start;
@@ -501,20 +513,20 @@
   }
   .ctrl-btn:hover{ background:var(--ink); color:var(--paper); transform:translateY(-2px) scale(1.03); }
   .ctrl-btn.primary{
-    background: linear-gradient(135deg, var(--pv-primary), var(--pv-accent));
-    border-color:var(--pv-primary-deep);
+    background: linear-gradient(135deg, var(--brand-primary), var(--brand-accent));
+    border-color:var(--brand-primary-deep);
     color:#fff;
-    box-shadow: 0 6px 18px rgba(255,90,60,0.35);
+    box-shadow: 0 6px 18px rgba(236,72,153,0.35);
   }
   .ctrl-btn.primary:hover{
-    background: linear-gradient(135deg, var(--pv-primary-deep), var(--pv-primary));
+    background: linear-gradient(135deg, var(--brand-primary-deep), var(--brand-primary));
     color:#fff;
-    box-shadow: 0 10px 26px rgba(255,90,60,0.5);
+    box-shadow: 0 10px 26px rgba(236,72,153,0.5);
   }
   .ctrl-btn.danger{ border-color:var(--clay-deep); color:var(--clay-deep); }
   .ctrl-btn.danger:hover{ background:var(--clay-deep); color:#fff; box-shadow: 0 8px 20px rgba(255,77,109,0.4); }
   .ctrl-btn:focus-visible, .tab:focus-visible, .mode-btn:focus-visible, .quiz-opt:focus-visible, .deck-select:focus-visible{
-    outline:3px solid var(--pv-primary-deep);
+    outline:3px solid var(--brand-primary-deep);
     outline-offset:2px;
   }
 
@@ -529,8 +541,8 @@
     position:relative;
     overflow:hidden;
   }
-  #pv-panel .quiz-question{ border-color: rgba(255,90,60,0.3); box-shadow: 0 8px 30px rgba(255,90,60,0.12); }
-  #vc-panel .quiz-question{ border-color: rgba(91,79,232,0.3); box-shadow: 0 8px 30px rgba(91,79,232,0.12); }
+  #pv-panel .quiz-question{ border-color: rgba(236,72,153,0.3); box-shadow: 0 8px 30px rgba(236,72,153,0.12); }
+  #vc-panel .quiz-question{ border-color: rgba(190,24,93,0.3); box-shadow: 0 8px 30px rgba(190,24,93,0.12); }
   .quiz-prompt-label{
     font-family:'JetBrains Mono', monospace;
     font-size:0.75rem;
@@ -647,7 +659,7 @@
     display:flex;
     gap:20px;
     align-items:flex-start;
-    max-width:960px;
+    max-width:1400px;
     width:100%;
     flex-wrap:wrap;
     justify-content:center;
@@ -666,12 +678,41 @@
     flex:1 1 500px;
     padding:32px;
     box-shadow:0 24px 70px rgba(0,0,0,0.35);
-    border-top: 5px solid transparent;
-    border-image: linear-gradient(90deg, var(--pv-primary), var(--vc-primary)) 1;
+    position:relative;
+    overflow:hidden;
+  }
+  .modal::before{
+    content:'';
+    position:absolute;
+    top:0; left:0; right:0;
+    height:5px;
+    background: linear-gradient(90deg, var(--brand-primary), var(--brand-accent));
+    border-radius:24px 24px 0 0;
   }
   .published-panel{
     max-width:280px;
     flex:0 1 260px;
+  }
+  .roster-panel{
+    max-width:520px;
+    flex:1 1 440px;
+  }
+  .roster-panel-body{
+    display:grid;
+    grid-template-columns:200px 1fr;
+    gap:24px;
+    align-items:start;
+  }
+  .roster-register-col{
+    border-right:1.5px solid var(--line);
+    padding-right:20px;
+  }
+  .roster-list-col{
+    min-width:0;
+  }
+  @media (max-width:700px){
+    .roster-panel-body{ grid-template-columns:1fr; }
+    .roster-register-col{ border-right:none; border-bottom:1.5px solid var(--line); padding-right:0; padding-bottom:20px; }
   }
   .roster-item{
     display:flex;
@@ -684,6 +725,7 @@
     margin-bottom:6px;
   }
   .roster-item .name{ font-weight:700; font-size:0.88rem; }
+  .roster-item-actions{ display:flex; gap:6px; flex-shrink:0; }
   .roster-item .class-tag{
     font-family:'JetBrains Mono', monospace;
     font-size:0.72rem;
@@ -720,6 +762,12 @@
     transition: all 0.15s ease;
   }
   .roster-group-toggle:hover{ border-color:var(--vc-primary-deep); }
+  .roster-group-rename{
+    flex:0 0 auto;
+    font-size:0.72rem;
+    padding:0 12px;
+    white-space:nowrap;
+  }
   .roster-group-remove{
     flex:0 0 auto;
     font-size:0.72rem;
@@ -759,7 +807,7 @@
   }
   .student-pick-btn:hover{
     border-color:var(--pv-primary-deep);
-    background: linear-gradient(135deg, rgba(255,90,60,0.1), rgba(255,138,61,0.08));
+    background: linear-gradient(135deg, rgba(236,72,153,0.1), rgba(244,114,182,0.08));
     transform:translateX(4px);
   }
   .modal-head{
@@ -977,7 +1025,7 @@
   }
   .file-drop.has-file{
     border:1.5px solid var(--marigold-deep);
-    background:rgba(255,138,61,0.14);
+    background:rgba(244,114,182,0.14);
   }
   .file-drop-name{
     font-family:'JetBrains Mono', monospace;
@@ -1065,6 +1113,7 @@
 
   @media (prefers-reduced-motion: reduce){
     *{ animation:none !important; }
+    .brand{ animation: brandShimmer 7s ease-in-out infinite !important; }
     /* Keep simple color crossfades (theme switching) even with reduced motion,
        since a color fade isn't the kind of motion that causes discomfort —
        but still kill actual movement-based transitions (scale, translate, etc). */
@@ -1093,7 +1142,7 @@
     <div class="modal-sub" style="margin-bottom:28px;">who's using the site right now?</div>
     <div style="display:flex; flex-direction:column; gap:12px;">
       <button class="ctrl-btn primary" style="padding:16px; font-size:1rem;" onclick="openStudentLobby()">I'm a student</button>
-      <button class="ctrl-btn" style="padding:16px; font-size:1rem; background:linear-gradient(135deg, var(--vc-primary), var(--vc-accent)); border-color:var(--vc-primary-deep); color:#fff; box-shadow:0 6px 18px rgba(91,79,232,0.35);" onclick="showTeacherLogin()">I'm the teacher</button>
+      <button class="ctrl-btn" style="padding:16px; font-size:1rem; background:linear-gradient(135deg, var(--brand-primary), var(--brand-accent)); border-color:var(--brand-primary-deep); color:#fff; box-shadow:0 6px 18px rgba(236,72,153,0.35);" onclick="showTeacherLogin()">I'm the teacher</button>
     </div>
     <div id="teacher-login-box" style="display:none; margin-top:20px; text-align:left;">
       <div class="field-label">Teacher password</div>
@@ -1302,26 +1351,32 @@
       <div id="published-summary-vc" class="published-summary"></div>
     </div>
 
-    <div class="modal published-panel">
+    <div class="modal roster-panel">
       <div class="modal-head">
-        <div class="modal-title" style="font-size:1.2rem;">Register a student</div>
+        <div class="modal-title" style="font-size:1.2rem;">Student roster</div>
       </div>
-      <div class="modal-sub">add students to the class roster</div>
+      <div class="modal-sub">register students and manage classes</div>
 
-      <div class="field-label" style="margin-top:0;">Student name</div>
-      <input type="text" id="new-student-name" placeholder="e.g. An">
+      <div class="roster-panel-body">
+        <div class="roster-register-col">
+          <div class="field-label" style="margin-top:0;">Student name</div>
+          <input type="text" id="new-student-name" placeholder="e.g. An">
 
-      <div class="field-label">Class / group</div>
-      <input type="text" id="new-student-class" placeholder="e.g. 8A, Monday group" list="existing-classes-list">
-      <datalist id="existing-classes-list"></datalist>
+          <div class="field-label">Class / group</div>
+          <input type="text" id="new-student-class" placeholder="e.g. 8A, Monday group" list="existing-classes-list">
+          <datalist id="existing-classes-list"></datalist>
 
-      <div class="modal-actions" style="margin-top:14px;">
-        <button class="ctrl-btn primary" onclick="registerStudent()">Register</button>
+          <div class="modal-actions" style="margin-top:14px;">
+            <button class="ctrl-btn primary" onclick="registerStudent()">Register</button>
+          </div>
+          <div class="status-msg" id="student-register-status"></div>
+        </div>
+
+        <div class="roster-list-col">
+          <div class="field-label" style="margin-top:0;">Classes</div>
+          <div id="student-roster-list"></div>
+        </div>
       </div>
-      <div class="status-msg" id="student-register-status"></div>
-
-      <div class="field-label">Roster</div>
-      <div id="student-roster-list"></div>
     </div>
 
   </div> <!-- end modal-row -->
@@ -1556,6 +1611,60 @@ function removeClass(className){
   showToast(`Removed class "${className}"`, 2200);
 }
 
+function renameStudent(studentId){
+  const student = studentRoster.find(s => s.id === studentId);
+  if(!student) return;
+  const newName = prompt(`Rename student in "${student.className}":`, student.name);
+  if(newName === null) return; // cancelled
+  const trimmed = newName.trim();
+  if(!trimmed) return;
+
+  const isDuplicate = studentRoster.some(s =>
+    s.id !== studentId &&
+    normalizeForCompare(s.name) === normalizeForCompare(trimmed) &&
+    normalizeForCompare(s.className) === normalizeForCompare(student.className)
+  );
+  if(isDuplicate){
+    alert(`"${trimmed}" already exists in "${student.className}". Please choose a different name.`);
+    return;
+  }
+
+  student.name = trimmed;
+  saveRoster();
+  renderStudentRoster();
+  renderStudentLobby();
+  showToast('Student renamed!', 2000);
+}
+
+function renameClass(oldClassName){
+  const newClassName = prompt(`Rename class "${oldClassName}" to:`, oldClassName);
+  if(newClassName === null) return; // cancelled
+  const trimmed = newClassName.trim();
+  if(!trimmed || trimmed === oldClassName) return;
+
+  const studentsInOldClass = studentRoster.filter(s => s.className === oldClassName);
+  const studentsInNewClass = studentRoster.filter(s =>
+    normalizeForCompare(s.className) === normalizeForCompare(trimmed)
+  );
+
+  // check for name collisions if merging into an existing class
+  const collisions = studentsInOldClass.filter(a =>
+    studentsInNewClass.some(b => normalizeForCompare(a.name) === normalizeForCompare(b.name))
+  );
+  if(collisions.length > 0){
+    alert(`Can't rename: ${collisions.map(s=>s.name).join(', ')} would conflict with a student already in "${trimmed}".`);
+    return;
+  }
+
+  studentRoster.forEach(s => {
+    if(s.className === oldClassName) s.className = trimmed;
+  });
+  saveRoster();
+  renderStudentRoster();
+  renderStudentLobby();
+  showToast(`Renamed class to "${trimmed}"`, 2200);
+}
+
 function renderStudentRoster(){
   const list = document.getElementById('student-roster-list');
   populateClassDatalist();
@@ -1582,13 +1691,17 @@ function renderStudentRoster(){
           <span>${escapeHtml(className)}</span>
           <span class="roster-group-count">${students.length}</span>
         </button>
+        <button class="icon-btn roster-group-rename" data-class-name="${escapeHtml(className)}" onclick="renameClass(this.getAttribute('data-class-name'))" title="Rename this class">Rename</button>
         <button class="icon-btn danger roster-group-remove" data-class-name="${escapeHtml(className)}" onclick="removeClass(this.getAttribute('data-class-name'))" title="Remove entire class">Remove class</button>
       </div>
       <div class="roster-group-box" id="${groupKey}" style="display:none;">
         ${students.map(s => `
           <div class="roster-item">
             <span class="name">${escapeHtml(s.name)}</span>
-            <button class="icon-btn danger" onclick="removeStudent('${s.id}')">Remove</button>
+            <span class="roster-item-actions">
+              <button class="icon-btn" onclick="renameStudent('${s.id}')">Edit</button>
+              <button class="icon-btn danger" onclick="removeStudent('${s.id}')">Remove</button>
+            </span>
           </div>`).join('')}
       </div>`;
   }).join('');
