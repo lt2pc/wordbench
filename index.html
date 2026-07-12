@@ -15,6 +15,7 @@
     --ink-soft:#5C5470;
     --paper:#FFFBF2;
     --paper-dim:#FFF3DC;
+    --modal-surface:#FFFBF2;
 
     /* Brand accent — matches Springboard's hot pink/magenta identity, used for
        shared UI chrome (Teacher tools, mode picker, generic primary actions) */
@@ -56,6 +57,7 @@
     --ink-soft:#B8AFD9;
     --paper:#120E1E;
     --paper-dim:#1C1630;
+    --modal-surface:#241D38;
 
     --brand-primary:#F472B6;
     --brand-primary-deep:#F472B6;
@@ -649,7 +651,9 @@
   /* ---------- TEACHER PANEL (MODAL) ---------- */
   .modal-overlay{
     position:fixed; inset:0;
-    background:rgba(15,10,25,0.6);
+    background:rgba(8,5,14,0.72);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display:flex;
     align-items:flex-start;
     justify-content:center;
@@ -681,12 +685,13 @@
     opacity:1;
   }
   .modal{
-    background:var(--paper);
+    background:var(--modal-surface);
     border-radius:24px;
     max-width:640px;
     flex:1 1 500px;
     padding:32px;
-    box-shadow:0 24px 70px rgba(0,0,0,0.35);
+    box-shadow:0 24px 70px rgba(0,0,0,0.45);
+    border:1px solid var(--line);
     position:relative;
     overflow:hidden;
   }
@@ -1242,6 +1247,34 @@
 <!-- TEACHER MODAL -->
 <div class="modal-overlay" id="teacher-modal" onclick="if(event.target === this || event.target.classList.contains('modal-row')) closeTeacherPanel()">
   <div class="modal-row">
+    <div class="modal roster-panel">
+      <div class="modal-head">
+        <div class="modal-title" style="font-size:1.2rem;">Student roster</div>
+      </div>
+      <div class="modal-sub">register students and manage classes</div>
+
+      <div class="roster-panel-body">
+        <div class="roster-register-col">
+          <div class="field-label" style="margin-top:0;">Student name</div>
+          <input type="text" id="new-student-name" placeholder="e.g. An">
+
+          <div class="field-label">Class / group</div>
+          <input type="text" id="new-student-class" placeholder="e.g. 8A, Monday group" list="existing-classes-list">
+          <datalist id="existing-classes-list"></datalist>
+
+          <div class="modal-actions" style="margin-top:14px;">
+            <button class="ctrl-btn primary" onclick="registerStudent()">Register</button>
+          </div>
+          <div class="status-msg" id="student-register-status"></div>
+        </div>
+
+        <div class="roster-list-col">
+          <div class="field-label" style="margin-top:0;">Classes</div>
+          <div id="student-roster-list"></div>
+        </div>
+      </div>
+    </div>
+
     <div class="modal">
       <div class="modal-head">
         <div class="modal-title">Teacher tools</div>
@@ -1358,34 +1391,6 @@
 
       <div class="field-label">Vocabulary</div>
       <div id="published-summary-vc" class="published-summary"></div>
-    </div>
-
-    <div class="modal roster-panel">
-      <div class="modal-head">
-        <div class="modal-title" style="font-size:1.2rem;">Student roster</div>
-      </div>
-      <div class="modal-sub">register students and manage classes</div>
-
-      <div class="roster-panel-body">
-        <div class="roster-register-col">
-          <div class="field-label" style="margin-top:0;">Student name</div>
-          <input type="text" id="new-student-name" placeholder="e.g. An">
-
-          <div class="field-label">Class / group</div>
-          <input type="text" id="new-student-class" placeholder="e.g. 8A, Monday group" list="existing-classes-list">
-          <datalist id="existing-classes-list"></datalist>
-
-          <div class="modal-actions" style="margin-top:14px;">
-            <button class="ctrl-btn primary" onclick="registerStudent()">Register</button>
-          </div>
-          <div class="status-msg" id="student-register-status"></div>
-        </div>
-
-        <div class="roster-list-col">
-          <div class="field-label" style="margin-top:0;">Classes</div>
-          <div id="student-roster-list"></div>
-        </div>
-      </div>
     </div>
 
   </div> <!-- end modal-row -->
@@ -1990,7 +1995,7 @@ function buildQuizQuestionPlan(section){
 
   data.forEach((item, idx) => {
     plan.push({ wordIndex: idx, type: 'meaning' });
-    if(item.example && (section === 'pv' ? (item.verb) : item.word)){
+    if(item.example && (section === 'pv' ? (item.verb) : item.word) && hasUsableFillBlank(section, item)){
       plan.push({ wordIndex: idx, type: 'fill-blank' });
     }
     if(section === 'pv'){
@@ -2000,6 +2005,17 @@ function buildQuizQuestionPlan(section){
   });
 
   return shuffle(plan);
+}
+
+// Checks that blanking out the headword still leaves a real sentence behind —
+// filters out cases where the "example" is just the headword itself (e.g. an
+// auto-generated fallback like "give up." with no actual sentence context),
+// which would otherwise produce a quiz question that's just "_____." with
+// nothing for the student to reason from.
+function hasUsableFillBlank(section, item){
+  const blanked = blankOutHeadword(section, item);
+  const remaining = blanked.replace(/_+/g, '').replace(/[.,!?"'()]/g, '').trim();
+  return remaining.length >= 8; // require some real sentence content beyond the blank
 }
 
 // Builds 4 multiple-choice options (1 correct + 3 distractors) for a given
