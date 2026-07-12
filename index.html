@@ -91,6 +91,10 @@
   }
 
   *{box-sizing:border-box;}
+  /* Browsers apply an opaque default text color to <button>/<select> that does
+     NOT follow CSS inheritance — without this, buttons can render with invisible
+     dark text on dark backgrounds (or vice versa) regardless of theme. */
+  button, select{ color:inherit; font: inherit; }
   html{scroll-behavior:smooth;}
   body{
     margin:0;
@@ -579,6 +583,7 @@
     border-radius:14px;
     border:2px solid var(--line);
     background:var(--paper);
+    color:var(--ink);
     cursor:pointer;
     transition: all 0.18s cubic-bezier(.34,1.56,.64,1);
   }
