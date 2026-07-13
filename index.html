@@ -1373,7 +1373,6 @@
         <button class="tp-tab active" id="tp-tab-decks" onclick="setTpTab('decks')">My decks</button>
         <button class="tp-tab" id="tp-tab-add" onclick="setTpTab('add')">Add a word</button>
         <button class="tp-tab" id="tp-tab-import" onclick="setTpTab('import')">Import file</button>
-        <button class="tp-tab" id="tp-tab-quizzes" onclick="setTpTab('quizzes')">Custom quizzes</button>
       </div>
 
       <!-- DECKS LIST -->
@@ -1458,67 +1457,6 @@
       <div id="docx-preview-area"></div>
 
       <div class="status-msg" id="import-status"></div>
-    </div>
-
-    <!-- CUSTOM QUIZZES -->
-    <div class="tp-pane" id="tp-pane-quizzes">
-      <div class="field-label" style="margin-top:0;">Section for this quiz</div>
-      <select class="form-select" id="cq-section-select" onchange="renderCustomQuizManager()">
-        <option value="pv">Phrasal verbs</option>
-        <option value="vc">Vocabulary</option>
-      </select>
-
-      <div class="modal-actions" style="margin-top:14px;">
-        <button class="ctrl-btn primary" onclick="startNewCustomQuiz()">+ New custom quiz</button>
-      </div>
-
-      <div class="field-label">Existing custom quizzes</div>
-      <div id="cq-manager-list"></div>
-
-      <!-- Quiz editor, shown when creating/editing -->
-      <div id="cq-editor" style="display:none; margin-top:18px; border-top:1.5px solid var(--line); padding-top:18px;">
-        <div class="field-label" style="margin-top:0;" id="cq-editor-title">New custom quiz</div>
-
-        <div class="field-label">Quiz name</div>
-        <input type="text" id="cq-quiz-name" placeholder="e.g. Unit 4 Review">
-
-        <div class="field-label">Questions in this quiz</div>
-        <div id="cq-draft-list"></div>
-
-        <div class="cq-question-form">
-          <div class="field-label" style="margin-top:0;">Question</div>
-          <input type="text" id="cq-prompt" placeholder="e.g. What does &quot;give up&quot; mean?">
-
-          <div class="field-label">Answer options (mark the correct one)</div>
-          <div class="cq-option-row">
-            <input type="radio" name="cq-correct" id="cq-correct-0" value="0" checked>
-            <input type="text" id="cq-opt-0" placeholder="Option A">
-          </div>
-          <div class="cq-option-row">
-            <input type="radio" name="cq-correct" id="cq-correct-1" value="1">
-            <input type="text" id="cq-opt-1" placeholder="Option B">
-          </div>
-          <div class="cq-option-row">
-            <input type="radio" name="cq-correct" id="cq-correct-2" value="2">
-            <input type="text" id="cq-opt-2" placeholder="Option C">
-          </div>
-          <div class="cq-option-row">
-            <input type="radio" name="cq-correct" id="cq-correct-3" value="3">
-            <input type="text" id="cq-opt-3" placeholder="Option D">
-          </div>
-
-          <div class="modal-actions" style="margin-top:12px;">
-            <button class="ctrl-btn" onclick="addDraftQuestion()">+ Add this question</button>
-          </div>
-        </div>
-
-        <div class="status-msg" id="custom-quiz-status"></div>
-
-        <div class="modal-actions" style="margin-top:16px;">
-          <button class="ctrl-btn primary" onclick="saveCustomQuiz()">Save quiz</button>
-          <button class="ctrl-btn" onclick="closeCustomQuizEditor()">Cancel</button>
-        </div>
-      </div>
     </div>
 
     </div> <!-- end main teacher modal -->
@@ -1890,7 +1828,8 @@ let unsubscribeCustomQuizSnapshot = null;
 function connectCustomQuizzesToCloud(){
   if(!firebaseReady){
     customQuizzes = loadCustomQuizLocalFallback();
-    renderCustomQuizManager();
+    refreshCustomQuizPicker('pv');
+    refreshCustomQuizPicker('vc');
     return;
   }
   const ref = db.collection(CUSTOM_QUIZ_DOC_PATH.collection).doc(CUSTOM_QUIZ_DOC_PATH.doc);
@@ -1902,13 +1841,13 @@ function connectCustomQuizzesToCloud(){
       ref.set({ pv: [], vc: [] }).catch(()=>{});
       customQuizzes = { pv: [], vc: [] };
     }
-    renderCustomQuizManager();
     refreshCustomQuizPicker('pv');
     refreshCustomQuizPicker('vc');
   }, (err)=>{
     console.error('Custom quiz sync error:', err);
     customQuizzes = loadCustomQuizLocalFallback();
-    renderCustomQuizManager();
+    refreshCustomQuizPicker('pv');
+    refreshCustomQuizPicker('vc');
   });
 }
 
@@ -1931,129 +1870,91 @@ function saveCustomQuizzes(){
   }
 }
 
-/* ---- Teacher-side: create/manage custom quizzes ---- */
-// Holds the in-progress question list while building/editing a quiz, before saving.
-let draftQuizQuestions = [];
-let editingQuizId = null;
+/* ---- Teacher-side: create/manage custom quizzes ----
+   This editor now lives inline in each section's "Custom Quiz" tab (rendered by
+   renderCustomQuizPicker below) instead of in the old shared Teacher tools modal
+   tab. Because it's inline per-section, there's one draft state per section
+   (keyed by section) rather than a single shared draft plus a section dropdown. */
+const customQuizDraft = {
+  pv: { questions: [], editingQuizId: null, editorOpen: false },
+  vc: { questions: [], editingQuizId: null, editorOpen: false }
+};
 
-function currentCustomQuizSection(){
-  const el = document.getElementById('cq-section-select');
-  return el ? el.value : currentActiveSection();
-}
-
-function startNewCustomQuiz(){
-  editingQuizId = null;
-  draftQuizQuestions = [];
-  document.getElementById('cq-quiz-name').value = '';
-  renderDraftQuestionList();
-  clearCustomQuestionForm();
-  document.getElementById('cq-editor').style.display = 'block';
-  document.getElementById('cq-editor-title').textContent = 'New custom quiz';
+function startNewCustomQuiz(section){
+  customQuizDraft[section] = { questions: [], editingQuizId: null, editorOpen: true };
+  renderCustomQuizPicker(section);
 }
 
 function editCustomQuiz(section, quizId){
   const quiz = (customQuizzes[section] || []).find(q => q.id === quizId);
   if(!quiz) return;
-  editingQuizId = quizId;
-  draftQuizQuestions = JSON.parse(JSON.stringify(quiz.questions)); // deep copy so cancel doesn't mutate saved data
-  document.getElementById('cq-section-select').value = section;
-  document.getElementById('cq-quiz-name').value = quiz.name;
-  renderDraftQuestionList();
-  clearCustomQuestionForm();
-  document.getElementById('cq-editor').style.display = 'block';
-  document.getElementById('cq-editor-title').textContent = 'Editing: ' + quiz.name;
+  customQuizDraft[section] = {
+    questions: JSON.parse(JSON.stringify(quiz.questions)), // deep copy so cancel doesn't mutate saved data
+    editingQuizId: quizId,
+    editorOpen: true
+  };
+  renderCustomQuizPicker(section);
 }
 
-function closeCustomQuizEditor(){
-  document.getElementById('cq-editor').style.display = 'none';
-  editingQuizId = null;
-  draftQuizQuestions = [];
+function closeCustomQuizEditor(section){
+  customQuizDraft[section] = { questions: [], editingQuizId: null, editorOpen: false };
+  renderCustomQuizPicker(section);
 }
 
-function clearCustomQuestionForm(){
-  ['cq-prompt','cq-opt-0','cq-opt-1','cq-opt-2','cq-opt-3'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el) el.value = '';
-  });
-  document.querySelectorAll('input[name="cq-correct"]').forEach(r => r.checked = false);
-  document.getElementById('cq-correct-0').checked = true;
-}
-
-function addDraftQuestion(){
-  const prompt = document.getElementById('cq-prompt').value.trim();
-  const options = [0,1,2,3].map(i => document.getElementById('cq-opt-'+i).value.trim());
-  const correctRadio = document.querySelector('input[name="cq-correct"]:checked');
+function addDraftQuestion(section){
+  const draft = customQuizDraft[section];
+  const prompt = document.getElementById(section+'-cq-prompt').value.trim();
+  const options = [0,1,2,3].map(i => document.getElementById(section+'-cq-opt-'+i).value.trim());
+  const correctRadio = document.querySelector(`input[name="${section}-cq-correct"]:checked`);
   const correctIndex = correctRadio ? parseInt(correctRadio.value, 10) : 0;
 
   if(!prompt){
-    showStatus('custom-quiz-status', 'Please write a question.', false);
+    showStatus(section+'-custom-quiz-status', 'Please write a question.', false);
     return;
   }
   if(options.some(o => !o)){
-    showStatus('custom-quiz-status', 'Please fill in all 4 answer options.', false);
+    showStatus(section+'-custom-quiz-status', 'Please fill in all 4 answer options.', false);
     return;
   }
 
-  draftQuizQuestions.push({ id: slugId(), prompt, options, correctIndex });
-  clearCustomQuestionForm();
-  renderDraftQuestionList();
-  clearStatus('custom-quiz-status');
+  draft.questions.push({ id: slugId(), prompt, options, correctIndex });
+  clearStatus(section+'-custom-quiz-status');
+  renderCustomQuizPicker(section);
 }
 
-function removeDraftQuestion(questionId){
-  draftQuizQuestions = draftQuizQuestions.filter(q => q.id !== questionId);
-  renderDraftQuestionList();
+function removeDraftQuestion(section, questionId){
+  customQuizDraft[section].questions = customQuizDraft[section].questions.filter(q => q.id !== questionId);
+  renderCustomQuizPicker(section);
 }
 
-function renderDraftQuestionList(){
-  const list = document.getElementById('cq-draft-list');
-  if(!list) return;
-  if(draftQuizQuestions.length === 0){
-    list.innerHTML = `<div class="roster-empty">No questions added yet.</div>`;
-    return;
-  }
-  list.innerHTML = draftQuizQuestions.map((q, i) => `
-    <div class="cq-draft-item">
-      <div class="cq-draft-item-head">
-        <span class="cq-draft-num">Q${i+1}</span>
-        <button class="icon-btn danger" onclick="removeDraftQuestion('${q.id}')">Remove</button>
-      </div>
-      <div class="cq-draft-prompt">${escapeHtml(q.prompt)}</div>
-      <div class="cq-draft-options">
-        ${q.options.map((opt, oi) => `<div class="cq-draft-opt ${oi===q.correctIndex ? 'correct':''}">${oi===q.correctIndex ? '✓ ' : ''}${escapeHtml(opt)}</div>`).join('')}
-      </div>
-    </div>`).join('');
-}
-
-function saveCustomQuiz(){
-  const section = currentCustomQuizSection();
-  const name = document.getElementById('cq-quiz-name').value.trim();
+function saveCustomQuiz(section){
+  const draft = customQuizDraft[section];
+  const name = document.getElementById(section+'-cq-quiz-name').value.trim();
 
   if(!name){
-    showStatus('custom-quiz-status', 'Please name this quiz.', false);
+    showStatus(section+'-custom-quiz-status', 'Please name this quiz.', false);
     return;
   }
-  if(draftQuizQuestions.length === 0){
-    showStatus('custom-quiz-status', 'Add at least one question before saving.', false);
+  if(draft.questions.length === 0){
+    showStatus(section+'-custom-quiz-status', 'Add at least one question before saving.', false);
     return;
   }
 
   if(!customQuizzes[section]) customQuizzes[section] = [];
 
-  if(editingQuizId){
-    const quiz = customQuizzes[section].find(q => q.id === editingQuizId);
+  if(draft.editingQuizId){
+    const quiz = customQuizzes[section].find(q => q.id === draft.editingQuizId);
     if(quiz){
       quiz.name = name;
-      quiz.questions = draftQuizQuestions;
+      quiz.questions = draft.questions;
     }
   } else {
-    customQuizzes[section].push({ id: slugId(), name, questions: draftQuizQuestions });
+    customQuizzes[section].push({ id: slugId(), name, questions: draft.questions });
   }
 
   saveCustomQuizzes();
-  closeCustomQuizEditor();
-  renderCustomQuizManager();
-  refreshCustomQuizPicker(section);
+  customQuizDraft[section] = { questions: [], editingQuizId: null, editorOpen: false };
+  renderCustomQuizPicker(section);
   showToast('Custom quiz saved!', 2200);
 }
 
@@ -2063,29 +1964,7 @@ function deleteCustomQuiz(section, quizId){
   if(!confirm(`Delete custom quiz "${quiz.name}"? This can't be undone.`)) return;
   customQuizzes[section] = customQuizzes[section].filter(q => q.id !== quizId);
   saveCustomQuizzes();
-  renderCustomQuizManager();
-  refreshCustomQuizPicker(section);
-}
-
-function renderCustomQuizManager(){
-  const list = document.getElementById('cq-manager-list');
-  if(!list) return;
-  const section = currentCustomQuizSection();
-  const quizzes = customQuizzes[section] || [];
-
-  if(quizzes.length === 0){
-    list.innerHTML = `<div class="roster-empty">No custom quizzes yet for this section.</div>`;
-    return;
-  }
-
-  list.innerHTML = quizzes.map(q => `
-    <div class="roster-item">
-      <span class="name">${escapeHtml(q.name)} <span class="class-tag">(${q.questions.length} question${q.questions.length===1?'':'s'})</span></span>
-      <span class="roster-item-actions">
-        <button class="icon-btn" onclick="editCustomQuiz('${section}','${q.id}')">Edit</button>
-        <button class="icon-btn danger" onclick="deleteCustomQuiz('${section}','${q.id}')">Delete</button>
-      </span>
-    </div>`).join('');
+  renderCustomQuizPicker(section);
 }
 
 // Saves deck changes. Teachers push only the affected section to Firestore
@@ -2695,13 +2574,20 @@ const customQuizState = {
 };
 
 function refreshCustomQuizPicker(section){
-  // if a custom quiz is currently being taken, re-render live in case the teacher edited it
-  if(customQuizState[section].quizId && state[section].mode === 'custom'){
-    renderCustomQuizPicker(section);
-  }
+  // re-render live if this tab is currently showing, whether it's a student
+  // mid-attempt (teacher may have edited the quiz) or a teacher editing/managing
+  if(state[section].mode === 'custom') renderCustomQuizPicker(section);
 }
 
 function renderCustomQuizPicker(section){
+  if(isTeacherMode()){
+    renderCustomQuizTeacherView(section);
+  } else {
+    renderCustomQuizStudentView(section);
+  }
+}
+
+function renderCustomQuizStudentView(section){
   const area = document.getElementById(section+'-custom-area');
   const quizzes = (customQuizzes[section] || []);
   const cs = customQuizState[section];
@@ -2728,6 +2614,99 @@ function renderCustomQuizPicker(section){
           <span class="cq-picker-count">${q.questions.length} question${q.questions.length===1?'':'s'}</span>
         </button>`).join('')}
     </div>`;
+}
+
+// Teacher view of the "Custom Quiz" tab: lists existing quizzes for this section
+// with Edit/Delete, a "+ New custom quiz" button, and — when creating or editing —
+// the full inline question-builder editor. This replaced the old Teacher tools
+// modal tab so teachers manage quizzes right where students take them.
+function renderCustomQuizTeacherView(section){
+  const area = document.getElementById(section+'-custom-area');
+  document.getElementById(section+'-progress').textContent = 'custom quiz — teacher view';
+
+  const quizzes = customQuizzes[section] || [];
+  const draft = customQuizDraft[section];
+
+  const listHTML = quizzes.length === 0
+    ? `<div class="roster-empty">No custom quizzes yet for this section.</div>`
+    : quizzes.map(q => `
+        <div class="roster-item">
+          <span class="name">${escapeHtml(q.name)} <span class="class-tag">(${q.questions.length} question${q.questions.length===1?'':'s'})</span></span>
+          <span class="roster-item-actions">
+            <button class="icon-btn" onclick="editCustomQuiz('${section}','${q.id}')">Edit</button>
+            <button class="icon-btn danger" onclick="deleteCustomQuiz('${section}','${q.id}')">Delete</button>
+          </span>
+        </div>`).join('');
+
+  const editorHTML = !draft.editorOpen ? '' : `
+    <div id="${section}-cq-editor" style="margin-top:18px; border-top:1.5px solid var(--line); padding-top:18px;">
+      <div class="field-label" style="margin-top:0;">${draft.editingQuizId ? 'Editing quiz' : 'New custom quiz'}</div>
+
+      <div class="field-label">Quiz name</div>
+      <input type="text" id="${section}-cq-quiz-name" placeholder="e.g. Unit 4 Review" value="${escapeHtml((function(){
+        if(!draft.editingQuizId) return '';
+        const q = quizzes.find(x => x.id === draft.editingQuizId);
+        return q ? q.name : '';
+      })())}">
+
+      <div class="field-label">Questions in this quiz</div>
+      <div id="${section}-cq-draft-list">
+        ${draft.questions.length === 0 ? `<div class="roster-empty">No questions added yet.</div>` : draft.questions.map((q, i) => `
+          <div class="cq-draft-item">
+            <div class="cq-draft-item-head">
+              <span class="cq-draft-num">Q${i+1}</span>
+              <button class="icon-btn danger" onclick="removeDraftQuestion('${section}','${q.id}')">Remove</button>
+            </div>
+            <div class="cq-draft-prompt">${escapeHtml(q.prompt)}</div>
+            <div class="cq-draft-options">
+              ${q.options.map((opt, oi) => `<div class="cq-draft-opt ${oi===q.correctIndex ? 'correct':''}">${oi===q.correctIndex ? '✓ ' : ''}${escapeHtml(opt)}</div>`).join('')}
+            </div>
+          </div>`).join('')}
+      </div>
+
+      <div class="cq-question-form">
+        <div class="field-label" style="margin-top:0;">Question</div>
+        <input type="text" id="${section}-cq-prompt" placeholder="e.g. What does &quot;give up&quot; mean?">
+
+        <div class="field-label">Answer options (mark the correct one)</div>
+        <div class="cq-option-row">
+          <input type="radio" name="${section}-cq-correct" id="${section}-cq-correct-0" value="0" checked>
+          <input type="text" id="${section}-cq-opt-0" placeholder="Option A">
+        </div>
+        <div class="cq-option-row">
+          <input type="radio" name="${section}-cq-correct" id="${section}-cq-correct-1" value="1">
+          <input type="text" id="${section}-cq-opt-1" placeholder="Option B">
+        </div>
+        <div class="cq-option-row">
+          <input type="radio" name="${section}-cq-correct" id="${section}-cq-correct-2" value="2">
+          <input type="text" id="${section}-cq-opt-2" placeholder="Option C">
+        </div>
+        <div class="cq-option-row">
+          <input type="radio" name="${section}-cq-correct" id="${section}-cq-correct-3" value="3">
+          <input type="text" id="${section}-cq-opt-3" placeholder="Option D">
+        </div>
+
+        <div class="modal-actions" style="margin-top:12px;">
+          <button class="ctrl-btn" onclick="addDraftQuestion('${section}')">+ Add this question</button>
+        </div>
+      </div>
+
+      <div class="status-msg" id="${section}-custom-quiz-status"></div>
+
+      <div class="modal-actions" style="margin-top:16px;">
+        <button class="ctrl-btn primary" onclick="saveCustomQuiz('${section}')">Save quiz</button>
+        <button class="ctrl-btn" onclick="closeCustomQuizEditor('${section}')">Cancel</button>
+      </div>
+    </div>`;
+
+  area.innerHTML = `
+    <div class="modal-actions" style="margin-bottom:14px;">
+      <button class="ctrl-btn primary" onclick="startNewCustomQuiz('${section}')">+ New custom quiz</button>
+    </div>
+    <div class="field-label" style="margin-top:0;">Existing custom quizzes</div>
+    <div id="${section}-cq-manager-list">${listHTML}</div>
+    ${editorHTML}
+  `;
 }
 
 function startCustomQuizAttempt(section, quizId){
@@ -2872,7 +2851,7 @@ function closeTeacherPanel(){
 
 function setTpTab(tab){
   tpCurrentTab = tab;
-  ['decks','add','import','quizzes'].forEach(t=>{
+  ['decks','add','import'].forEach(t=>{
     document.getElementById('tp-tab-'+t).classList.toggle('active', t===tab);
     document.getElementById('tp-pane-'+t).classList.toggle('active', t===tab);
   });
@@ -2901,11 +2880,6 @@ function renderTeacherPanel(){
   resetUnifiedDrop();
   clearStatus('add-status');
   clearStatus('import-status');
-
-  // custom quizzes tab
-  const cqSectionSelect = document.getElementById('cq-section-select');
-  if(cqSectionSelect) cqSectionSelect.value = section;
-  renderCustomQuizManager();
 }
 
 function populateDeckDropdown(selectId, section){
