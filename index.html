@@ -401,6 +401,140 @@
   }
   .flip-card.flipped .combo{ transform: scale(0.001); transition: transform 0.01s; }
 
+  /* ---------- SRS RATING BUTTONS ---------- */
+  .srs-rate-row{
+    display:flex;
+    gap:10px;
+    width:100%;
+    max-width:clamp(480px, 40vw, 680px);
+    flex-wrap:wrap;
+  }
+  .srs-rate-btn{
+    flex:1 1 0;
+    min-width:100px;
+    font-family:'Inter', sans-serif;
+    font-weight:700;
+    font-size:0.88rem;
+    padding:14px 10px;
+    border-radius:14px;
+    border:2px solid var(--line);
+    background:var(--paper);
+    color:var(--ink);
+    cursor:pointer;
+    transition: all 0.18s ease;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:3px;
+  }
+  .srs-rate-btn:hover{ transform:translateY(-2px); }
+  .srs-rate-btn .srs-rate-sub{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.68rem;
+    opacity:0.6;
+    font-weight:500;
+  }
+  .srs-rate-again{ border-color: rgba(255,77,109,0.4); }
+  .srs-rate-again:hover{ background: rgba(255,77,109,0.12); border-color:var(--danger); }
+  .srs-rate-hard{ border-color: rgba(244,114,182,0.4); }
+  .srs-rate-hard:hover{ background: rgba(244,114,182,0.12); border-color:var(--brand-accent); }
+  .srs-rate-good{ border-color: rgba(139,212,80,0.4); }
+  .srs-rate-good:hover{ background: rgba(139,212,80,0.14); border-color:var(--success); }
+  .srs-rate-easy{ border-color: rgba(101,179,46,0.4); }
+  .srs-rate-easy:hover{ background: rgba(101,179,46,0.16); border-color:var(--success-deep); }
+
+  .srs-status-badge{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.7rem;
+    font-weight:700;
+    letter-spacing:0.03em;
+    text-transform:uppercase;
+    padding:4px 12px;
+    border-radius:999px;
+    display:inline-block;
+  }
+  .srs-status-new{ background:rgba(92,84,112,0.12); color:var(--ink-soft); }
+  .srs-status-learning{ background:rgba(244,114,182,0.16); color:var(--brand-primary-deep); }
+  .srs-status-forgotten{ background:rgba(255,77,109,0.16); color:var(--danger-deep); }
+  .srs-status-mastered{ background:rgba(139,212,80,0.18); color:var(--success-deep); }
+
+  .srs-done-summary{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content:center;
+    margin-top:14px;
+  }
+
+  /* ---------- DECK PROGRESS ---------- */
+  .deck-progress-section{ margin-bottom:22px; }
+  .deck-progress-heading{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:1.3rem;
+    margin-bottom:12px;
+  }
+  .deck-progress-row{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+  }
+  .deck-progress-card{
+    background:var(--paper);
+    border:1.5px solid var(--line);
+    border-radius:18px;
+    padding:16px 20px;
+    display:flex;
+    align-items:center;
+    gap:16px;
+    min-width:260px;
+    flex:1 1 260px;
+    box-shadow: 0 4px 14px rgba(26,22,37,0.06);
+  }
+  .progress-ring-wrap{
+    position:relative;
+    width:64px;
+    height:64px;
+    flex-shrink:0;
+  }
+  .progress-ring-wrap svg{ transform: rotate(-90deg); }
+  .progress-ring-track{ fill:none; stroke:var(--paper-dim); stroke-width:6; }
+  .progress-ring-fill{
+    fill:none;
+    stroke:var(--success);
+    stroke-width:6;
+    stroke-linecap:round;
+    transition: stroke-dasharray 0.4s ease;
+  }
+  .progress-ring-label{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono', monospace;
+    font-weight:700;
+    font-size:0.82rem;
+    color:var(--success-deep);
+  }
+  .deck-progress-info .deck-progress-name{
+    font-family:'Inter', sans-serif;
+    font-weight:700;
+    font-size:1rem;
+    margin-bottom:2px;
+  }
+  .deck-progress-info .deck-progress-detail{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.78rem;
+    color:var(--ink-soft);
+  }
+  .deck-progress-breakdown{
+    display:flex;
+    gap:8px;
+    margin-top:8px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.7rem;
+    color:var(--ink-soft);
+    flex-wrap:wrap;
+  }
+
   .headword{
     font-family:'Fraunces', serif;
     font-weight:600;
@@ -1286,6 +1420,7 @@
       <select class="deck-select" id="pv-deck-select" onchange="switchDeck('pv', this.value)"></select>
       <span class="deck-count" id="pv-deck-count"></span>
     </div>
+    <div id="pv-deck-progress"></div>
     <div class="mode-row">
       <div class="mode-toggle" role="tablist" aria-label="Study mode">
         <button class="mode-btn active" id="pv-mode-flash" onclick="setMode('pv','flash')">Flashcards</button>
@@ -1306,6 +1441,7 @@
       <select class="deck-select" id="vc-deck-select" onchange="switchDeck('vc', this.value)"></select>
       <span class="deck-count" id="vc-deck-count"></span>
     </div>
+    <div id="vc-deck-progress"></div>
     <div class="mode-row">
       <div class="mode-toggle" role="tablist" aria-label="Study mode">
         <button class="mode-btn active" id="vc-mode-flash" onclick="setMode('vc','flash')">Flashcards</button>
@@ -1373,6 +1509,7 @@
         <button class="tp-tab active" id="tp-tab-decks" onclick="setTpTab('decks')">My decks</button>
         <button class="tp-tab" id="tp-tab-add" onclick="setTpTab('add')">Add a word</button>
         <button class="tp-tab" id="tp-tab-import" onclick="setTpTab('import')">Import file</button>
+        <button class="tp-tab" id="tp-tab-progress" onclick="setTpTab('progress')">Student progress</button>
       </div>
 
       <!-- DECKS LIST -->
@@ -1457,6 +1594,13 @@
       <div id="docx-preview-area"></div>
 
       <div class="status-msg" id="import-status"></div>
+    </div>
+
+    <!-- STUDENT PROGRESS (teacher view) -->
+    <div class="tp-pane" id="tp-pane-progress">
+      <div class="field-label" style="margin-top:0;">Student</div>
+      <select class="form-select" id="tp-progress-student-select" onchange="renderTeacherProgressTab()"></select>
+      <div id="tp-progress-content" style="margin-top:16px;"></div>
     </div>
 
     </div> <!-- end main teacher modal -->
@@ -1566,6 +1710,7 @@ function connectToCloud(onFirstLoad){
   if(!firebaseReady){
     setSyncBanner('Running in offline mode — changes save only to this browser.', true);
     deckStore = loadLocalFallback();
+    ensureWordIds(deckStore);
     if(onFirstLoad) onFirstLoad();
     return;
   }
@@ -1587,6 +1732,7 @@ function connectToCloud(onFirstLoad){
     console.error('Firestore sync error:', err);
     setSyncBanner('Could not connect to the shared database — showing your last saved version.', true);
     deckStore = loadLocalFallback();
+    ensureWordIds(deckStore);
     if(onFirstLoad) onFirstLoad();
   });
 }
@@ -1870,6 +2016,194 @@ function saveCustomQuizzes(){
   }
 }
 
+/* ---------------- STUDENT PROGRESS (spaced repetition, per student) ----------------
+   Each card (word), once a student has reviewed it, gets its own SM-2 scheduling
+   state — this is the same algorithm behind Anki/SuperMemo. A card is stored at
+   studentProgress[studentId][section][deckId][wordId] = {
+     status,          // 'new' | 'learning' | 'forgotten' | 'mastered'
+     repetitions,     // consecutive correct reviews since the last lapse
+     ease,            // SM-2 "easiness factor", starts at 2.5, min 1.3
+     interval,        // days to wait before this card is due again
+     dueDate          // ISO date string; card is due for review on/after this date
+   }
+   Progress is per-student because the same shared decks are studied by many
+   students, each at their own pace — mirrors how customQuizzes/roster already
+   sync via Firestore, but keyed by studentId so each student's data is separate. */
+const PROGRESS_DOC_PATH = { collection: "wordbench", doc: "studentProgress" };
+const PROGRESS_LOCAL_FALLBACK_KEY = 'wordbench_student_progress_local_fallback_v1';
+
+let studentProgress = {}; // { [studentId]: { pv: { [deckId]: { [wordId]: cardState } }, vc: {...} } }
+let unsubscribeProgressSnapshot = null;
+
+function connectProgressToCloud(){
+  if(!firebaseReady){
+    studentProgress = loadProgressLocalFallback();
+    refreshCurrentModeArea('pv');
+    refreshCurrentModeArea('vc');
+    return;
+  }
+  const ref = db.collection(PROGRESS_DOC_PATH.collection).doc(PROGRESS_DOC_PATH.doc);
+  unsubscribeProgressSnapshot = ref.onSnapshot((snap)=>{
+    if(snap.exists){
+      studentProgress = snap.data().byStudent || {};
+    } else {
+      ref.set({ byStudent: {} }).catch(()=>{});
+      studentProgress = {};
+    }
+    refreshCurrentModeArea('pv');
+    refreshCurrentModeArea('vc');
+  }, (err)=>{
+    console.error('Progress sync error:', err);
+    studentProgress = loadProgressLocalFallback();
+    refreshCurrentModeArea('pv');
+    refreshCurrentModeArea('vc');
+  });
+}
+
+// Re-renders whichever mode a section is currently showing, if it's a mode that
+// displays progress-derived info (flashcards, or the teacher progress tab).
+function refreshCurrentModeArea(section){
+  if(state[section].mode === 'flash') renderFlash(section);
+  renderDeckProgress(section);
+  if(document.getElementById('teacher-modal') && document.getElementById('teacher-modal').classList.contains('open')){
+    renderTeacherProgressTab();
+  }
+}
+
+function loadProgressLocalFallback(){
+  try{
+    const raw = localStorage.getItem(PROGRESS_LOCAL_FALLBACK_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){ /* ignore corrupt storage */ }
+  return {};
+}
+
+// Writes the full progress store. Unlike deck/roster/quiz saves (gated to
+// isTeacherMode() since only teachers edit those), progress is written by
+// whichever student is actively reviewing — there's no separate auth layer in
+// this app, so "whoever is in that session" is the same trust model already
+// used elsewhere (e.g. a teacher's browser writes decks because it's in teacher
+// mode; a student's browser writes their own progress because it's in student
+// mode with a selected student profile).
+function saveStudentProgress(){
+  localStorage.setItem(PROGRESS_LOCAL_FALLBACK_KEY, JSON.stringify(studentProgress));
+  if(firebaseReady && db){
+    const ref = db.collection(PROGRESS_DOC_PATH.collection).doc(PROGRESS_DOC_PATH.doc);
+    ref.set({ byStudent: studentProgress }).catch((err)=>{
+      console.error('Failed to save student progress to cloud:', err);
+    });
+  }
+}
+
+function blankCardState(){
+  return { status:'new', repetitions:0, ease:2.5, interval:0, dueDate: null };
+}
+
+function getCardState(studentId, section, deckId, wordId){
+  const byStudent = studentProgress[studentId];
+  const cs = byStudent && byStudent[section] && byStudent[section][deckId] && byStudent[section][deckId][wordId];
+  return cs ? cs : blankCardState();
+}
+
+function setCardState(studentId, section, deckId, wordId, cardState){
+  if(!studentProgress[studentId]) studentProgress[studentId] = { pv:{}, vc:{} };
+  if(!studentProgress[studentId][section]) studentProgress[studentId][section] = {};
+  if(!studentProgress[studentId][section][deckId]) studentProgress[studentId][section][deckId] = {};
+  studentProgress[studentId][section][deckId][wordId] = cardState;
+}
+
+// A card graduates to "mastered" once it's survived two consecutive correct
+// reviews AND its interval has grown past the SM-2 second-step threshold (6
+// days) — the same point Anki/SuperMemo consider a card "out of learning".
+const MASTERED_INTERVAL_THRESHOLD = 6;
+
+// Core SM-2 scheduler, simplified to the standard 4-button rating scale used by
+// Anki (Again/Hard/Good/Easy) instead of SM-2's original 0-5 numeric grade —
+// mapped onto SM-2's quality scale: Again=1 (fail), Hard=3, Good=4, Easy=5.
+// See: https://en.wikipedia.org/wiki/SuperMemo (SM-2 algorithm)
+function srsReview(prevState, rating){
+  const quality = { again:1, hard:3, good:4, easy:5 }[rating];
+  const cs = { ...prevState };
+  const wasMastered = cs.status === 'mastered';
+  const hadHistory = cs.status !== 'new';
+
+  if(quality < 3){
+    // Failed recall — SM-2 resets the repetition streak and ease drops, and the
+    // card is reviewed again very soon. Distinguish "forgotten" (had progress,
+    // then lapsed) from "new" (never seen) so the label carries useful meaning.
+    cs.repetitions = 0;
+    cs.interval = 1;
+    cs.status = hadHistory ? 'forgotten' : 'learning';
+  } else {
+    if(cs.repetitions === 0) cs.interval = 1;
+    else if(cs.repetitions === 1) cs.interval = 6;
+    else cs.interval = Math.round(cs.interval * cs.ease);
+    cs.repetitions += 1;
+    cs.status = (cs.repetitions >= 2 && cs.interval >= MASTERED_INTERVAL_THRESHOLD) ? 'mastered' : 'learning';
+  }
+
+  // SM-2 ease-factor update formula (same regardless of pass/fail)
+  cs.ease = cs.ease + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+  if(cs.ease < 1.3) cs.ease = 1.3;
+
+  const due = new Date();
+  due.setDate(due.getDate() + cs.interval);
+  cs.dueDate = due.toISOString().slice(0,10);
+
+  return cs;
+}
+
+// Simplified two-outcome entry point for quiz-style answers (right/wrong),
+// used by the auto-generated Quiz and Custom Quiz modes where there's no
+// four-button self-rating — just maps to SM-2's "again" (fail) or "good" (pass).
+function srsReviewFromCorrectness(prevState, wasCorrect){
+  return srsReview(prevState, wasCorrect ? 'good' : 'again');
+}
+
+// Records a review for the active student against a specific card, persists it,
+// and returns the updated card state. No-ops (returns null) if there's no
+// active student to attribute the review to — e.g. a teacher browsing in
+// teacher view has no personal progress to track.
+function recordReview(section, wordId, rating){
+  if(!isTeacherMode() && currentStudent){
+    const deck = activeDeck(section);
+    if(!deck) return null;
+    const deckId = deckStore[section].selectedDeckId;
+    const prev = getCardState(currentStudent.id, section, deckId, wordId);
+    const next = srsReview(prev, rating);
+    setCardState(currentStudent.id, section, deckId, wordId, next);
+    saveStudentProgress();
+    return next;
+  }
+  return null;
+}
+
+function recordReviewFromCorrectness(section, wordId, wasCorrect){
+  return recordReview(section, wordId, wasCorrect ? 'good' : 'again');
+}
+
+// Aggregates progress for one student across one deck, for the "Deck progress"
+// display: counts per status plus the mastered percentage shown in the ring.
+function deckProgressSummary(studentId, section, deckId, words){
+  const counts = { new:0, learning:0, forgotten:0, mastered:0 };
+  words.forEach(w=>{
+    const cs = getCardState(studentId, section, deckId, w.id);
+    counts[cs.status] = (counts[cs.status]||0) + 1;
+  });
+  const total = words.length;
+  const pct = total > 0 ? Math.round((counts.mastered / total) * 100) : 0;
+  return { counts, total, mastered: counts.mastered, pct };
+}
+
+// Cards due for review right now for a student in a deck — used to prioritize
+// the flashcard queue (due cards first, then never-seen "new" cards).
+function isCardDue(cardState){
+  if(cardState.status === 'new') return true;
+  if(!cardState.dueDate) return true;
+  return cardState.dueDate <= new Date().toISOString().slice(0,10);
+}
+
+
 /* ---- Teacher-side: create/manage custom quizzes ----
    This editor now lives inline in each section's "Custom Quiz" tab (rendered by
    renderCustomQuizPicker below) instead of in the old shared Teacher tools modal
@@ -1989,7 +2323,27 @@ function saveDeckStore(changedSection){
   }
 }
 
+// Ensures every word/card in every deck has a stable id. Cards were originally
+// just plain objects with no identity, referenced only by array index — that's
+// fine for rendering, but per-student spaced-repetition progress needs a stable
+// key that survives reordering, inserts, and deletes. This is idempotent: it
+// only fills in ids that are missing, and runs every time deckStore changes
+// (see refreshAllUI) so it covers manual add, CSV/docx/JSON import, and the
+// bundled default decks alike, without touching any of those creation sites.
+function ensureWordIds(store){
+  ['pv','vc'].forEach(section=>{
+    const s = store[section];
+    if(!s || !s.decks) return;
+    Object.values(s.decks).forEach(deck=>{
+      (deck.words || []).forEach(word=>{
+        if(!word.id) word.id = slugId();
+      });
+    });
+  });
+}
+
 function refreshAllUI(){
+  ensureWordIds(deckStore);
   refreshDeckSelect('pv');
   refreshDeckSelect('vc');
   resetStudyState('pv');
@@ -2037,13 +2391,15 @@ function dataFor(section){
 
 /* ---------------- STUDY STATE ---------------- */
 const state = {
-  pv: { mode:'flash', flashIndex:0, order:[], quizIndex:0, quizOrder:[], score:0, answered:false },
-  vc: { mode:'flash', flashIndex:0, order:[], quizIndex:0, quizOrder:[], score:0, answered:false },
+  pv: { mode:'flash', srsQueue:[], srsPos:0, srsFlipped:false, srsSessionStats:null, quizIndex:0, quizOrder:[], score:0, answered:false },
+  vc: { mode:'flash', srsQueue:[], srsPos:0, srsFlipped:false, srsSessionStats:null, quizIndex:0, quizOrder:[], score:0, answered:false },
 };
 
 function resetStudyState(section){
-  state[section].flashIndex = 0;
-  state[section].order = [];
+  state[section].srsQueue = [];
+  state[section].srsPos = 0;
+  state[section].srsFlipped = false;
+  state[section].srsSessionStats = null;
   state[section].quizIndex = 0;
   state[section].quizOrder = [];
   state[section].score = 0;
@@ -2093,6 +2449,7 @@ function refreshDeckSelect(section){
     sel.innerHTML = `<option value="">No decks</option>`;
     sel.disabled = true;
     document.getElementById(section+'-deck-count').textContent = 'There are no decks here.';
+    renderDeckProgress(section);
     return;
   }
 
@@ -2103,6 +2460,7 @@ function refreshDeckSelect(section){
   }).join('');
   document.getElementById(section+'-deck-count').textContent =
     `${dataFor(section).length} card${dataFor(section).length===1?'':'s'}`;
+  renderDeckProgress(section);
 }
 
 function switchDeck(section, deckId){
@@ -2116,11 +2474,174 @@ function switchDeck(section, deckId){
   else renderQuiz(section);
 }
 
-/* ---------------- FLASHCARDS ---------------- */
-function initOrder(section){
-  if(state[section].order.length===0){
-    state[section].order = shuffle(dataFor(section).map((_,i)=>i));
+// Renders the "Deck progress" ring card for the current student in this
+// section — mirrors the reference design: a ring showing % mastered, the deck
+// name, and "X of Y cards mastered" beneath it, plus a small status breakdown.
+// Hidden entirely in teacher mode (teachers view progress per-student in
+// Teacher tools → Student progress instead — see renderTeacherProgressTab).
+function renderDeckProgress(section){
+  const el = document.getElementById(section+'-deck-progress');
+  if(!el) return;
+
+  if(isTeacherMode() || !currentStudent){
+    el.innerHTML = '';
+    return;
   }
+
+  const deck = activeDeck(section);
+  const data = dataFor(section);
+  if(!deck || data.length === 0){
+    el.innerHTML = '';
+    return;
+  }
+
+  const deckId = deckStore[section].selectedDeckId;
+  const summary = deckProgressSummary(currentStudent.id, section, deckId, data);
+  const circumference = 2 * Math.PI * 26; // r=26
+  const dash = (summary.pct / 100) * circumference;
+
+  el.innerHTML = `
+    <div class="deck-progress-section">
+      <div class="deck-progress-heading">Deck progress</div>
+      <div class="deck-progress-row">
+        <div class="deck-progress-card">
+          <div class="progress-ring-wrap">
+            <svg width="64" height="64" viewBox="0 0 64 64">
+              <circle class="progress-ring-track" cx="32" cy="32" r="26"></circle>
+              <circle class="progress-ring-fill" cx="32" cy="32" r="26"
+                stroke-dasharray="${dash} ${circumference}"></circle>
+            </svg>
+            <div class="progress-ring-label">${summary.pct}%</div>
+          </div>
+          <div class="deck-progress-info">
+            <div class="deck-progress-name">${escapeHtml(deck.name)}</div>
+            <div class="deck-progress-detail">${summary.mastered} of ${summary.total} cards mastered</div>
+            <div class="deck-progress-breakdown">
+              <span class="srs-status-badge srs-status-new">${summary.counts.new} new</span>
+              <span class="srs-status-badge srs-status-learning">${summary.counts.learning} learning</span>
+              <span class="srs-status-badge srs-status-forgotten">${summary.counts.forgotten} forgotten</span>
+              <span class="srs-status-badge srs-status-mastered">${summary.counts.mastered} mastered</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ---------------- STUDENT PROGRESS (teacher view) ---------------- */
+function populateProgressStudentSelect(){
+  const sel = document.getElementById('tp-progress-student-select');
+  if(!sel) return;
+  const previouslySelected = sel.value;
+
+  if(studentRoster.length === 0){
+    sel.innerHTML = `<option value="">No students registered</option>`;
+    sel.disabled = true;
+    return;
+  }
+
+  sel.disabled = false;
+  const byClass = {};
+  studentRoster.forEach(s=>{
+    if(!byClass[s.className]) byClass[s.className] = [];
+    byClass[s.className].push(s);
+  });
+
+  sel.innerHTML = Object.keys(byClass).sort().map(className => `
+    <optgroup label="${escapeHtml(className)}">
+      ${byClass[className].map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('')}
+    </optgroup>`).join('');
+
+  // keep the previous selection if that student still exists, otherwise default to the first
+  if(previouslySelected && studentRoster.some(s => s.id === previouslySelected)){
+    sel.value = previouslySelected;
+  }
+}
+
+// Shows every deck (across both sections) as a progress ring for the currently
+// selected student in the picker — lets a teacher see at a glance how a
+// specific student is doing across everything they've been assigned.
+function renderTeacherProgressTab(){
+  const content = document.getElementById('tp-progress-content');
+  if(!content) return;
+
+  if(studentRoster.length === 0){
+    content.innerHTML = `<div class="roster-empty">Register a student under "My decks" to start tracking progress.</div>`;
+    return;
+  }
+
+  const sel = document.getElementById('tp-progress-student-select');
+  const studentId = sel ? sel.value : '';
+  const student = studentRoster.find(s => s.id === studentId);
+  if(!student){
+    content.innerHTML = `<div class="roster-empty">Select a student to view their progress.</div>`;
+    return;
+  }
+
+  const sectionLabels = { pv: 'Phrasal verbs', vc: 'Vocabulary' };
+  let html = '';
+
+  ['pv','vc'].forEach(section=>{
+    const s = deckStore[section];
+    const deckIds = Object.keys(s.decks);
+    if(deckIds.length === 0) return;
+
+    html += `<div class="deck-progress-heading">${sectionLabels[section]}</div><div class="deck-progress-row">`;
+    deckIds.forEach(deckId=>{
+      const deck = s.decks[deckId];
+      const words = deck.words || [];
+      const summary = deckProgressSummary(studentId, section, deckId, words);
+      const circumference = 2 * Math.PI * 26;
+      const dash = words.length === 0 ? 0 : (summary.pct / 100) * circumference;
+      html += `
+        <div class="deck-progress-card">
+          <div class="progress-ring-wrap">
+            <svg width="64" height="64" viewBox="0 0 64 64">
+              <circle class="progress-ring-track" cx="32" cy="32" r="26"></circle>
+              <circle class="progress-ring-fill" cx="32" cy="32" r="26"
+                stroke-dasharray="${dash} ${circumference}"></circle>
+            </svg>
+            <div class="progress-ring-label">${summary.pct}%</div>
+          </div>
+          <div class="deck-progress-info">
+            <div class="deck-progress-name">${escapeHtml(deck.name)}</div>
+            <div class="deck-progress-detail">${summary.mastered} of ${summary.total} cards mastered</div>
+            <div class="deck-progress-breakdown">
+              <span class="srs-status-badge srs-status-new">${summary.counts.new} new</span>
+              <span class="srs-status-badge srs-status-learning">${summary.counts.learning} learning</span>
+              <span class="srs-status-badge srs-status-forgotten">${summary.counts.forgotten} forgotten</span>
+              <span class="srs-status-badge srs-status-mastered">${summary.counts.mastered} mastered</span>
+            </div>
+          </div>
+        </div>`;
+    });
+    html += `</div>`;
+  });
+
+  content.innerHTML = html || `<div class="roster-empty">No decks exist yet for this student to have progress on.</div>`;
+}
+
+/* ---------------- FLASHCARDS (spaced-repetition review) ----------------
+   Replaces the old "shuffle and flip through everything" mode. Cards are pulled
+   from a per-student due queue (never-seen "new" cards plus anything whose SM-2
+   dueDate has arrived), studied one at a time, and rated Again/Hard/Good/Easy —
+   which feeds directly into that student's spaced-repetition schedule. */
+
+// Builds today's review queue for the current student: due cards (including
+// "new" ones never studied) first — new cards shuffled in on top since there's
+// no due date to sort by yet — then hands back the ordered list of word ids.
+function buildSrsQueue(section){
+  const data = dataFor(section);
+  const deckId = deckStore[section].selectedDeckId;
+  if(!currentStudent) return data.map(w => w.id); // teacher preview: show everything in order
+
+  const due = [];
+  const notDue = [];
+  data.forEach(w=>{
+    const cs = getCardState(currentStudent.id, section, deckId, w.id);
+    if(isCardDue(cs)) due.push(w.id); else notDue.push(w.id);
+  });
+  return shuffle(due).concat(shuffle(notDue));
 }
 
 function renderFlash(section){
@@ -2140,12 +2661,39 @@ function renderFlash(section){
     return;
   }
 
-  initOrder(section);
-  if(state[section].flashIndex >= data.length) state[section].flashIndex = 0;
-  const idx = state[section].order[state[section].flashIndex];
-  const item = data[idx];
+  if(isTeacherMode()){
+    area.innerHTML = `<div class="empty-state"><div class="big-label">Spaced-repetition review is student-only</div>Switch to a student profile (Switch view) to study with progress tracking. As a teacher you can review each student's mastery in Teacher tools → Student progress.</div>`;
+    document.getElementById(section+'-progress').textContent = 'teacher view';
+    return;
+  }
+
+  if(state[section].srsQueue.length === 0){
+    state[section].srsQueue = buildSrsQueue(section);
+    state[section].srsPos = 0;
+    state[section].srsSessionStats = null;
+  }
+
+  const queue = state[section].srsQueue;
+
+  if(state[section].srsSessionStats || state[section].srsPos >= queue.length){
+    renderSrsSessionDone(section);
+    return;
+  }
+
+  const wordId = queue[state[section].srsPos];
+  const item = data.find(w => w.id === wordId);
+  if(!item){
+    // card was deleted mid-session — skip it
+    state[section].srsPos++;
+    renderFlash(section);
+    return;
+  }
+
+  const deckId = deckStore[section].selectedDeckId;
+  const cardState = getCardState(currentStudent.id, section, deckId, item.id);
+
   document.getElementById(section+'-progress').textContent =
-    `card ${state[section].flashIndex+1} of ${data.length}`;
+    `card ${state[section].srsPos+1} of ${queue.length}`;
 
   let frontHTML, backHTML;
   if(section==='pv'){
@@ -2172,41 +2720,106 @@ function renderFlash(section){
     backHTML = `<div class="back-meaning">${escapeHtml(item.meaning)}</div><div class="back-example">"${escapeHtml(item.example)}"</div>`;
   }
 
+  const statusBadgeHTML = `<span class="srs-status-badge srs-status-${cardState.status}">${cardState.status}</span>`;
+  const flippedClass = state[section].srsFlipped ? ' flipped' : '';
+
+  const rateRowHTML = !state[section].srsFlipped ? '' : `
+    <div class="srs-rate-row">
+      <button class="srs-rate-btn srs-rate-again" onclick="rateSrsCard('${section}','again')">Again<span class="srs-rate-sub">forgot it</span></button>
+      <button class="srs-rate-btn srs-rate-hard" onclick="rateSrsCard('${section}','hard')">Hard<span class="srs-rate-sub">barely got it</span></button>
+      <button class="srs-rate-btn srs-rate-good" onclick="rateSrsCard('${section}','good')">Good<span class="srs-rate-sub">got it</span></button>
+      <button class="srs-rate-btn srs-rate-easy" onclick="rateSrsCard('${section}','easy')">Easy<span class="srs-rate-sub">no effort</span></button>
+    </div>`;
+
   area.innerHTML = `
-    <div class="flip-card" id="${section}-flipcard" onclick="this.classList.toggle('flipped')" role="button" tabindex="0" aria-label="Flashcard, tap to flip">
+    <div style="margin-bottom:2px;">${statusBadgeHTML}</div>
+    <div class="flip-card${flippedClass}" id="${section}-flipcard" onclick="flipSrsCard('${section}')" role="button" tabindex="0" aria-label="Flashcard, tap to flip">
       <div class="flip-inner">
         <div class="face front">${frontHTML}</div>
         <div class="face back">${backHTML}</div>
       </div>
     </div>
-    <div class="card-controls">
-      <button class="ctrl-btn" onclick="prevCard('${section}')">← Previous</button>
-      <button class="ctrl-btn" onclick="shuffleCards('${section}')">Shuffle</button>
-      <button class="ctrl-btn" onclick="nextCard('${section}')">Next →</button>
-    </div>
+    ${rateRowHTML}
   `;
 
   const card = document.getElementById(section+'-flipcard');
   card.addEventListener('keydown', (e)=>{
-    if(e.key==='Enter' || e.key===' '){ e.preventDefault(); card.classList.toggle('flipped'); }
+    if(e.key==='Enter' || e.key===' '){ e.preventDefault(); flipSrsCard(section); }
   });
 }
 
-function nextCard(section){
-  const data = dataFor(section);
-  if(data.length===0) return;
-  state[section].flashIndex = (state[section].flashIndex+1) % data.length;
+function flipSrsCard(section){
+  state[section].srsFlipped = !state[section].srsFlipped;
   renderFlash(section);
 }
-function prevCard(section){
+
+// Records the student's self-rating via SM-2, advances to the next card in the
+// queue, and moves on. This is the only place ratings are recorded, so a card's
+// mastery status only ever changes through a review the student actually did.
+function rateSrsCard(section, rating){
   const data = dataFor(section);
-  if(data.length===0) return;
-  state[section].flashIndex = (state[section].flashIndex-1+data.length) % data.length;
-  renderFlash(section);
+  const queue = state[section].srsQueue;
+  const wordId = queue[state[section].srsPos];
+  const item = data.find(w => w.id === wordId);
+  if(!item) return;
+
+  const before = getCardState(currentStudent.id, section, deckStore[section].selectedDeckId, item.id).status;
+  const after = recordReview(section, item.id, rating);
+
+  if(!state[section].srsSessionStats){
+    state[section].srsSessionStats = { reviewed:0, again:0, hard:0, good:0, easy:0, newlyMastered:0 };
+  }
+  const stats = state[section].srsSessionStats;
+  stats.reviewed++;
+  stats[rating]++;
+  if(after && after.status === 'mastered' && before !== 'mastered') stats.newlyMastered++;
+
+  state[section].srsPos++;
+  state[section].srsFlipped = false;
+  renderDeckProgress(section);
+
+  if(state[section].srsPos >= queue.length){
+    renderSrsSessionDone(section);
+  } else {
+    renderFlash(section);
+  }
 }
-function shuffleCards(section){
-  state[section].order = shuffle(dataFor(section).map((_,i)=>i));
-  state[section].flashIndex = 0;
+
+function renderSrsSessionDone(section){
+  const area = document.getElementById(section+'-flash-area');
+  const stats = state[section].srsSessionStats;
+  document.getElementById(section+'-progress').textContent = 'session complete';
+
+  if(!stats){
+    // queue was empty from the start — nothing was due
+    area.innerHTML = `
+      <div class="empty-state">
+        <div class="big-label">All caught up!</div>
+        No cards are due for review right now. Check back later, or come back after your teacher adds new words.
+      </div>`;
+    return;
+  }
+
+  area.innerHTML = `
+    <div class="empty-state">
+      <div class="big-label">Nice work!</div>
+      You reviewed ${stats.reviewed} card${stats.reviewed===1?'':'s'} this session.
+      <div class="srs-done-summary">
+        <span class="srs-status-badge srs-status-mastered">${stats.newlyMastered} newly mastered</span>
+        <span class="srs-status-badge srs-status-learning">${stats.good + stats.easy} recalled well</span>
+        <span class="srs-status-badge srs-status-forgotten">${stats.again} forgotten</span>
+      </div>
+      <div class="modal-actions" style="justify-content:center; margin-top:20px;">
+        <button class="ctrl-btn primary" onclick="restartSrsSession('${section}')">Review more cards</button>
+      </div>
+    </div>`;
+}
+
+function restartSrsSession(section){
+  state[section].srsQueue = buildSrsQueue(section);
+  state[section].srsPos = 0;
+  state[section].srsFlipped = false;
+  state[section].srsSessionStats = null;
   renderFlash(section);
 }
 
@@ -2525,7 +3138,7 @@ function renderQuiz(section){
 
   const optsHTML = options.map(optValue => {
     const isCorrect = optValue === correctValue;
-    return `<button class="quiz-opt" data-correct="${isCorrect}" onclick="answerQuiz('${section}', this)">${escapeHtml(optValue)}</button>`;
+    return `<button class="quiz-opt" data-correct="${isCorrect}" data-word-id="${escapeHtml(item.id)}" onclick="answerQuiz('${section}', this)">${escapeHtml(optValue)}</button>`;
   }).join('');
 
   area.innerHTML = `
@@ -2552,6 +3165,9 @@ function answerQuiz(section, btnEl){
     else if(b === btnEl) b.classList.add('incorrect');
   });
   if(chosenCorrect) state[section].score++;
+  const wordId = btnEl.getAttribute('data-word-id');
+  if(wordId) recordReviewFromCorrectness(section, wordId, chosenCorrect);
+  renderDeckProgress(section);
   document.getElementById(section+'-next-q').style.display = 'inline-block';
 }
 
@@ -2851,7 +3467,7 @@ function closeTeacherPanel(){
 
 function setTpTab(tab){
   tpCurrentTab = tab;
-  ['decks','add','import'].forEach(t=>{
+  ['decks','add','import','progress'].forEach(t=>{
     document.getElementById('tp-tab-'+t).classList.toggle('active', t===tab);
     document.getElementById('tp-pane-'+t).classList.toggle('active', t===tab);
   });
@@ -2880,6 +3496,10 @@ function renderTeacherPanel(){
   resetUnifiedDrop();
   clearStatus('add-status');
   clearStatus('import-status');
+
+  // student progress tab
+  populateProgressStudentSelect();
+  renderTeacherProgressTab();
 }
 
 function populateDeckDropdown(selectId, section){
@@ -3859,6 +4479,15 @@ function finishEnteringApp(){
       ? `${currentStudent.name} · ${currentStudent.className}`
       : 'Student view';
   }
+  // currentMode/currentStudent just changed, which affects the deck progress
+  // ring, the flashcard queue, and whether the custom-quiz tab shows the
+  // teacher editor or the student picker — refresh everything that depends on it.
+  refreshDeckSelect('pv');
+  refreshDeckSelect('vc');
+  resetStudyState('pv');
+  resetStudyState('vc');
+  setMode('pv', state.pv.mode);
+  setMode('vc', state.vc.mode);
 }
 
 /* ---------------- DARK MODE ---------------- */
@@ -3901,6 +4530,7 @@ connectToCloud(function(){
 });
 connectRosterToCloud();
 connectCustomQuizzesToCloud();
+connectProgressToCloud();
 
 // Restore a previous login/mode if it hasn't expired yet, so refreshing the page
 // doesn't force the person to choose student/teacher and re-enter the password again.
