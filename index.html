@@ -2368,7 +2368,7 @@ function buildQuizQuestionPlan(section){
 // which would otherwise produce a quiz question that's just "_____." with
 // nothing for the student to reason from.
 function hasUsableFillBlank(section, item){
-  const blanked = blankOutHeadword(section, item);
+  const { blanked } = blankOutHeadword(section, item);
   const remaining = blanked.replace(/_+/g, '').replace(/[.,!?"'()]/g, '').trim();
   return remaining.length >= 8; // require some real sentence content beyond the blank
 }
@@ -2380,11 +2380,26 @@ function buildOptionsForQuestion(section, question){
   const data = dataFor(section);
   const item = data[question.wordIndex];
 
+  // For fill-blank questions, figure out which inflection the example sentence
+  // actually uses (base/3rd-person/gerund/past) so every option — correct answer
+  // and distractors alike — gets conjugated the same way. Without this, a sentence
+  // needing "looking forward to" would still offer the bare "look forward to" as
+  // an option, which is not a grammatically valid completion.
+  const fillBlankShape = question.type === 'fill-blank'
+    ? blankOutHeadword(section, item).shape
+    : 'base';
+
   function fieldValue(it, type){
     if(type === 'meaning') return it.meaning;
     if(type === 'synonym') return it.synonym;
     if(type === 'antonym') return it.antonym;
-    if(type === 'fill-blank') return section === 'pv' ? `${it.verb} ${it.particle}` : it.word;
+    if(type === 'fill-blank'){
+      if(section !== 'pv') return it.word;
+      const { verb, particle } = pvHeadwordAndLevel(it);
+      if(!verb) return '';
+      const conjugated = conjugateVerb(verb, fillBlankShape);
+      return particle ? `${conjugated} ${particle}` : conjugated;
+    }
     return it.meaning;
   }
 
@@ -2425,8 +2440,8 @@ function questionPromptText(section, question, item){
     return `Which word is an <strong>antonym</strong> of <strong>${escapeHtml(pvHeadword(item))}</strong>?`;
   }
   if(question.type === 'fill-blank'){
-    const blanked = blankOutHeadword(section, item);
-    return `Fill in the blank (use the present-tense form):<br><span class="fill-blank-sentence">"${escapeHtml(blanked)}"</span>`;
+    const { blanked } = blankOutHeadword(section, item);
+    return `Fill in the blank (choose the option that fits the sentence grammatically):<br><span class="fill-blank-sentence">"${escapeHtml(blanked)}"</span>`;
   }
   return '';
 }
@@ -2485,17 +2500,62 @@ function verbFormsFor(verb){
   return Array.from(forms);
 }
 
+// Given a verb's base form and the actual inflected form found in a sentence,
+// figures out which "shape" that inflection is, so we can reproduce the exact
+// same shape when building multiple-choice options (e.g. if the sentence used
+// "looking", every option must also be "look" + "-ing", not the bare headword).
+function verbFormShape(baseVerb, matchedForm){
+  const v = baseVerb.toLowerCase();
+  const m = matchedForm.toLowerCase();
+  if(m === v) return 'base';
+  if(m === v + 's') return '3rd_person_s';
+  if(m === v.replace(/e$/,'') + 'ing' || m === v + 'ing') return 'gerund';
+  if(IRREGULAR_VERB_FORMS[v] && IRREGULAR_VERB_FORMS[v].includes(m)) return 'past';
+  if(m === v.replace(/e$/,'') + 'ed' || m === v + 'ed') return 'past';
+  return 'base';
+}
+
+// Applies a given inflection shape to any verb, so distractor phrasal verbs can
+// be conjugated to match whatever shape the sentence actually needs. Not a full
+// English conjugator — covers the regular patterns plus the IRREGULAR_VERB_FORMS
+// list already maintained for verb-matching above.
+function conjugateVerb(verb, shape){
+  const v = verb.toLowerCase();
+  if(shape === 'base') return v;
+  if(shape === '3rd_person_s'){
+    if(/(s|sh|ch|x|z|o)$/.test(v)) return v + 'es';
+    if(/[^aeiou]y$/.test(v)) return v.replace(/y$/,'ies');
+    return v + 's';
+  }
+  if(shape === 'gerund'){
+    if(/ie$/.test(v)) return v.replace(/ie$/,'ying');
+    if(/e$/.test(v) && !/ee$/.test(v)) return v.replace(/e$/,'ing');
+    return v + 'ing';
+  }
+  if(shape === 'past' || shape === 'past_participle'){
+    if(IRREGULAR_VERB_FORMS[v]) return IRREGULAR_VERB_FORMS[v][0];
+    if(/e$/.test(v)) return v + 'd';
+    if(/[^aeiou]y$/.test(v)) return v.replace(/y$/,'ied');
+    return v + 'ed';
+  }
+  return v;
+}
+
+// Finds the verb + particle in the example sentence and replaces them with a
+// blank. Returns the blanked sentence AND the inflection shape that was found
+// (base/3rd-person/gerund/past), so the quiz can build answer options that are
+// conjugated the same way instead of always using the bare dictionary headword.
 function blankOutHeadword(section, item){
   const example = item.example || '';
 
   if(section === 'vc'){
-    if(!item.word) return example;
+    if(!item.word) return { blanked: example, shape: 'base' };
     const re = new RegExp(item.word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'ig');
-    return example.replace(re, '_____');
+    return { blanked: example.replace(re, '_____'), shape: 'base' };
   }
 
   const { verb: cleanVerb, particle: cleanParticle } = pvHeadwordAndLevel(item);
-  if(!cleanVerb) return example;
+  if(!cleanVerb) return { blanked: example, shape: 'base' };
 
   const words = example.split(/(\s+)/); // keep whitespace tokens so we can rejoin cleanly
   const verbFormSet = verbFormsFor(cleanVerb);
@@ -2513,10 +2573,13 @@ function blankOutHeadword(section, item){
     const headword = pvHeadword(item);
     if(headword && example.toLowerCase().includes(headword.toLowerCase())){
       const re = new RegExp(headword.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'i');
-      return example.replace(re, '_____');
+      return { blanked: example.replace(re, '_____'), shape: 'base' };
     }
-    return example;
+    return { blanked: example, shape: 'base' };
   }
+
+  const matchedForm = words[verbTokenIdx].toLowerCase().replace(/[^a-z]/g,'');
+  const shape = verbFormShape(cleanVerb, matchedForm);
 
   // blank the verb token, then also blank the particle if it appears shortly after
   const outTokens = words.slice();
@@ -2537,7 +2600,7 @@ function blankOutHeadword(section, item){
     }
   }
 
-  return outTokens.join('').replace(/\s{2,}/g,' ').trim();
+  return { blanked: outTokens.join('').replace(/\s{2,}/g,' ').trim(), shape };
 }
 
 function renderQuiz(section){
