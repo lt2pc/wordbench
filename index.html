@@ -752,6 +752,83 @@
     opacity:0.7;
     padding:6px 0;
   }
+
+  .cq-question-form{
+    background:var(--paper-dim);
+    border:1.5px solid var(--line);
+    border-radius:14px;
+    padding:16px;
+    margin-top:14px;
+  }
+  .cq-option-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:8px;
+  }
+  .cq-option-row input[type="radio"]{
+    flex-shrink:0;
+    width:18px;
+    height:18px;
+    accent-color: var(--brand-primary);
+  }
+  .cq-option-row input[type="text"]{
+    flex:1;
+    margin:0;
+  }
+  .cq-draft-item{
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    padding:12px 14px;
+    margin-bottom:10px;
+  }
+  .cq-draft-item-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:6px;
+  }
+  .cq-draft-num{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.72rem;
+    font-weight:700;
+    color:var(--brand-primary-deep);
+    text-transform:uppercase;
+  }
+  .cq-draft-prompt{
+    font-weight:700;
+    font-size:0.9rem;
+    margin-bottom:8px;
+  }
+  .cq-draft-options{
+    display:grid;
+    gap:4px;
+    font-size:0.82rem;
+  }
+  .cq-draft-opt{
+    padding:5px 10px;
+    border-radius:8px;
+    background:var(--paper);
+    color:var(--ink-soft);
+  }
+  .cq-draft-opt.correct{
+    background:rgba(139,212,80,0.18);
+    color:var(--success-deep);
+    font-weight:700;
+  }
+  .cq-picker-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .cq-picker-count{
+    display:block;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.72rem;
+    opacity:0.7;
+    margin-top:4px;
+    font-weight:400;
+  }
   .roster-group-header{
     display:flex;
     align-items:stretch;
@@ -1213,12 +1290,14 @@
       <div class="mode-toggle" role="tablist" aria-label="Study mode">
         <button class="mode-btn active" id="pv-mode-flash" onclick="setMode('pv','flash')">Flashcards</button>
         <button class="mode-btn" id="pv-mode-quiz" onclick="setMode('pv','quiz')">Quiz</button>
+        <button class="mode-btn" id="pv-mode-custom" onclick="setMode('pv','custom')">Custom Quiz</button>
       </div>
       <div class="progress-tag" id="pv-progress">card 1 of —</div>
     </div>
 
     <div id="pv-flash-area" class="card-stage"></div>
     <div id="pv-quiz-area" class="quiz-wrap" style="display:none;"></div>
+    <div id="pv-custom-area" class="quiz-wrap" style="display:none;"></div>
   </section>
 
   <!-- VOCAB SECTION -->
@@ -1231,12 +1310,14 @@
       <div class="mode-toggle" role="tablist" aria-label="Study mode">
         <button class="mode-btn active" id="vc-mode-flash" onclick="setMode('vc','flash')">Flashcards</button>
         <button class="mode-btn" id="vc-mode-quiz" onclick="setMode('vc','quiz')">Quiz</button>
+        <button class="mode-btn" id="vc-mode-custom" onclick="setMode('vc','custom')">Custom Quiz</button>
       </div>
       <div class="progress-tag" id="vc-progress">card 1 of —</div>
     </div>
 
     <div id="vc-flash-area" class="card-stage"></div>
     <div id="vc-quiz-area" class="quiz-wrap" style="display:none;"></div>
+    <div id="vc-custom-area" class="quiz-wrap" style="display:none;"></div>
   </section>
 
 </main>
@@ -1292,6 +1373,7 @@
         <button class="tp-tab active" id="tp-tab-decks" onclick="setTpTab('decks')">My decks</button>
         <button class="tp-tab" id="tp-tab-add" onclick="setTpTab('add')">Add a word</button>
         <button class="tp-tab" id="tp-tab-import" onclick="setTpTab('import')">Import file</button>
+        <button class="tp-tab" id="tp-tab-quizzes" onclick="setTpTab('quizzes')">Custom quizzes</button>
       </div>
 
       <!-- DECKS LIST -->
@@ -1376,6 +1458,67 @@
       <div id="docx-preview-area"></div>
 
       <div class="status-msg" id="import-status"></div>
+    </div>
+
+    <!-- CUSTOM QUIZZES -->
+    <div class="tp-pane" id="tp-pane-quizzes">
+      <div class="field-label" style="margin-top:0;">Section for this quiz</div>
+      <select class="form-select" id="cq-section-select" onchange="renderCustomQuizManager()">
+        <option value="pv">Phrasal verbs</option>
+        <option value="vc">Vocabulary</option>
+      </select>
+
+      <div class="modal-actions" style="margin-top:14px;">
+        <button class="ctrl-btn primary" onclick="startNewCustomQuiz()">+ New custom quiz</button>
+      </div>
+
+      <div class="field-label">Existing custom quizzes</div>
+      <div id="cq-manager-list"></div>
+
+      <!-- Quiz editor, shown when creating/editing -->
+      <div id="cq-editor" style="display:none; margin-top:18px; border-top:1.5px solid var(--line); padding-top:18px;">
+        <div class="field-label" style="margin-top:0;" id="cq-editor-title">New custom quiz</div>
+
+        <div class="field-label">Quiz name</div>
+        <input type="text" id="cq-quiz-name" placeholder="e.g. Unit 4 Review">
+
+        <div class="field-label">Questions in this quiz</div>
+        <div id="cq-draft-list"></div>
+
+        <div class="cq-question-form">
+          <div class="field-label" style="margin-top:0;">Question</div>
+          <input type="text" id="cq-prompt" placeholder="e.g. What does &quot;give up&quot; mean?">
+
+          <div class="field-label">Answer options (mark the correct one)</div>
+          <div class="cq-option-row">
+            <input type="radio" name="cq-correct" id="cq-correct-0" value="0" checked>
+            <input type="text" id="cq-opt-0" placeholder="Option A">
+          </div>
+          <div class="cq-option-row">
+            <input type="radio" name="cq-correct" id="cq-correct-1" value="1">
+            <input type="text" id="cq-opt-1" placeholder="Option B">
+          </div>
+          <div class="cq-option-row">
+            <input type="radio" name="cq-correct" id="cq-correct-2" value="2">
+            <input type="text" id="cq-opt-2" placeholder="Option C">
+          </div>
+          <div class="cq-option-row">
+            <input type="radio" name="cq-correct" id="cq-correct-3" value="3">
+            <input type="text" id="cq-opt-3" placeholder="Option D">
+          </div>
+
+          <div class="modal-actions" style="margin-top:12px;">
+            <button class="ctrl-btn" onclick="addDraftQuestion()">+ Add this question</button>
+          </div>
+        </div>
+
+        <div class="status-msg" id="custom-quiz-status"></div>
+
+        <div class="modal-actions" style="margin-top:16px;">
+          <button class="ctrl-btn primary" onclick="saveCustomQuiz()">Save quiz</button>
+          <button class="ctrl-btn" onclick="closeCustomQuizEditor()">Cancel</button>
+        </div>
+      </div>
     </div>
 
     </div> <!-- end main teacher modal -->
@@ -1736,6 +1879,215 @@ function populateClassDatalist(){
   datalist.innerHTML = uniqueClasses.map(c => `<option value="${escapeHtml(c)}"></option>`).join('');
 }
 
+/* ---------------- CUSTOM QUIZZES (teacher-written, separate from auto quiz) ---------------- */
+const CUSTOM_QUIZ_DOC_PATH = { collection: "wordbench", doc: "customQuizzes" };
+const CUSTOM_QUIZ_LOCAL_FALLBACK_KEY = 'wordbench_custom_quizzes_local_fallback_v1';
+
+// Shape: { pv: [ {id, name, questions:[{id, prompt, options:[4], correctIndex}] } ], vc: [...] }
+let customQuizzes = { pv: [], vc: [] };
+let unsubscribeCustomQuizSnapshot = null;
+
+function connectCustomQuizzesToCloud(){
+  if(!firebaseReady){
+    customQuizzes = loadCustomQuizLocalFallback();
+    renderCustomQuizManager();
+    return;
+  }
+  const ref = db.collection(CUSTOM_QUIZ_DOC_PATH.collection).doc(CUSTOM_QUIZ_DOC_PATH.doc);
+  unsubscribeCustomQuizSnapshot = ref.onSnapshot((snap)=>{
+    if(snap.exists){
+      const data = snap.data();
+      customQuizzes = { pv: data.pv || [], vc: data.vc || [] };
+    } else {
+      ref.set({ pv: [], vc: [] }).catch(()=>{});
+      customQuizzes = { pv: [], vc: [] };
+    }
+    renderCustomQuizManager();
+    refreshCustomQuizPicker('pv');
+    refreshCustomQuizPicker('vc');
+  }, (err)=>{
+    console.error('Custom quiz sync error:', err);
+    customQuizzes = loadCustomQuizLocalFallback();
+    renderCustomQuizManager();
+  });
+}
+
+function loadCustomQuizLocalFallback(){
+  try{
+    const raw = localStorage.getItem(CUSTOM_QUIZ_LOCAL_FALLBACK_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){ /* ignore corrupt storage */ }
+  return { pv: [], vc: [] };
+}
+
+function saveCustomQuizzes(){
+  localStorage.setItem(CUSTOM_QUIZ_LOCAL_FALLBACK_KEY, JSON.stringify(customQuizzes));
+  if(firebaseReady && db && isTeacherMode()){
+    const ref = db.collection(CUSTOM_QUIZ_DOC_PATH.collection).doc(CUSTOM_QUIZ_DOC_PATH.doc);
+    ref.set(customQuizzes).catch((err)=>{
+      console.error('Failed to save custom quizzes to cloud:', err);
+      showStatus('custom-quiz-status', 'Could not save to the shared database — this change is only saved on this device.', false);
+    });
+  }
+}
+
+/* ---- Teacher-side: create/manage custom quizzes ---- */
+// Holds the in-progress question list while building/editing a quiz, before saving.
+let draftQuizQuestions = [];
+let editingQuizId = null;
+
+function currentCustomQuizSection(){
+  const el = document.getElementById('cq-section-select');
+  return el ? el.value : currentActiveSection();
+}
+
+function startNewCustomQuiz(){
+  editingQuizId = null;
+  draftQuizQuestions = [];
+  document.getElementById('cq-quiz-name').value = '';
+  renderDraftQuestionList();
+  clearCustomQuestionForm();
+  document.getElementById('cq-editor').style.display = 'block';
+  document.getElementById('cq-editor-title').textContent = 'New custom quiz';
+}
+
+function editCustomQuiz(section, quizId){
+  const quiz = (customQuizzes[section] || []).find(q => q.id === quizId);
+  if(!quiz) return;
+  editingQuizId = quizId;
+  draftQuizQuestions = JSON.parse(JSON.stringify(quiz.questions)); // deep copy so cancel doesn't mutate saved data
+  document.getElementById('cq-section-select').value = section;
+  document.getElementById('cq-quiz-name').value = quiz.name;
+  renderDraftQuestionList();
+  clearCustomQuestionForm();
+  document.getElementById('cq-editor').style.display = 'block';
+  document.getElementById('cq-editor-title').textContent = 'Editing: ' + quiz.name;
+}
+
+function closeCustomQuizEditor(){
+  document.getElementById('cq-editor').style.display = 'none';
+  editingQuizId = null;
+  draftQuizQuestions = [];
+}
+
+function clearCustomQuestionForm(){
+  ['cq-prompt','cq-opt-0','cq-opt-1','cq-opt-2','cq-opt-3'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  document.querySelectorAll('input[name="cq-correct"]').forEach(r => r.checked = false);
+  document.getElementById('cq-correct-0').checked = true;
+}
+
+function addDraftQuestion(){
+  const prompt = document.getElementById('cq-prompt').value.trim();
+  const options = [0,1,2,3].map(i => document.getElementById('cq-opt-'+i).value.trim());
+  const correctRadio = document.querySelector('input[name="cq-correct"]:checked');
+  const correctIndex = correctRadio ? parseInt(correctRadio.value, 10) : 0;
+
+  if(!prompt){
+    showStatus('custom-quiz-status', 'Please write a question.', false);
+    return;
+  }
+  if(options.some(o => !o)){
+    showStatus('custom-quiz-status', 'Please fill in all 4 answer options.', false);
+    return;
+  }
+
+  draftQuizQuestions.push({ id: slugId(), prompt, options, correctIndex });
+  clearCustomQuestionForm();
+  renderDraftQuestionList();
+  clearStatus('custom-quiz-status');
+}
+
+function removeDraftQuestion(questionId){
+  draftQuizQuestions = draftQuizQuestions.filter(q => q.id !== questionId);
+  renderDraftQuestionList();
+}
+
+function renderDraftQuestionList(){
+  const list = document.getElementById('cq-draft-list');
+  if(!list) return;
+  if(draftQuizQuestions.length === 0){
+    list.innerHTML = `<div class="roster-empty">No questions added yet.</div>`;
+    return;
+  }
+  list.innerHTML = draftQuizQuestions.map((q, i) => `
+    <div class="cq-draft-item">
+      <div class="cq-draft-item-head">
+        <span class="cq-draft-num">Q${i+1}</span>
+        <button class="icon-btn danger" onclick="removeDraftQuestion('${q.id}')">Remove</button>
+      </div>
+      <div class="cq-draft-prompt">${escapeHtml(q.prompt)}</div>
+      <div class="cq-draft-options">
+        ${q.options.map((opt, oi) => `<div class="cq-draft-opt ${oi===q.correctIndex ? 'correct':''}">${oi===q.correctIndex ? '✓ ' : ''}${escapeHtml(opt)}</div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function saveCustomQuiz(){
+  const section = currentCustomQuizSection();
+  const name = document.getElementById('cq-quiz-name').value.trim();
+
+  if(!name){
+    showStatus('custom-quiz-status', 'Please name this quiz.', false);
+    return;
+  }
+  if(draftQuizQuestions.length === 0){
+    showStatus('custom-quiz-status', 'Add at least one question before saving.', false);
+    return;
+  }
+
+  if(!customQuizzes[section]) customQuizzes[section] = [];
+
+  if(editingQuizId){
+    const quiz = customQuizzes[section].find(q => q.id === editingQuizId);
+    if(quiz){
+      quiz.name = name;
+      quiz.questions = draftQuizQuestions;
+    }
+  } else {
+    customQuizzes[section].push({ id: slugId(), name, questions: draftQuizQuestions });
+  }
+
+  saveCustomQuizzes();
+  closeCustomQuizEditor();
+  renderCustomQuizManager();
+  refreshCustomQuizPicker(section);
+  showToast('Custom quiz saved!', 2200);
+}
+
+function deleteCustomQuiz(section, quizId){
+  const quiz = (customQuizzes[section] || []).find(q => q.id === quizId);
+  if(!quiz) return;
+  if(!confirm(`Delete custom quiz "${quiz.name}"? This can't be undone.`)) return;
+  customQuizzes[section] = customQuizzes[section].filter(q => q.id !== quizId);
+  saveCustomQuizzes();
+  renderCustomQuizManager();
+  refreshCustomQuizPicker(section);
+}
+
+function renderCustomQuizManager(){
+  const list = document.getElementById('cq-manager-list');
+  if(!list) return;
+  const section = currentCustomQuizSection();
+  const quizzes = customQuizzes[section] || [];
+
+  if(quizzes.length === 0){
+    list.innerHTML = `<div class="roster-empty">No custom quizzes yet for this section.</div>`;
+    return;
+  }
+
+  list.innerHTML = quizzes.map(q => `
+    <div class="roster-item">
+      <span class="name">${escapeHtml(q.name)} <span class="class-tag">(${q.questions.length} question${q.questions.length===1?'':'s'})</span></span>
+      <span class="roster-item-actions">
+        <button class="icon-btn" onclick="editCustomQuiz('${section}','${q.id}')">Edit</button>
+        <button class="icon-btn danger" onclick="deleteCustomQuiz('${section}','${q.id}')">Delete</button>
+      </span>
+    </div>`).join('');
+}
+
 // Saves deck changes. Teachers push only the affected section to Firestore
 // (field-level update) to avoid overwriting the other section's concurrent changes.
 function saveDeckStore(changedSection){
@@ -1843,10 +2195,13 @@ function setMode(section, mode){
   state[section].mode = mode;
   document.getElementById(section+'-mode-flash').classList.toggle('active', mode==='flash');
   document.getElementById(section+'-mode-quiz').classList.toggle('active', mode==='quiz');
+  document.getElementById(section+'-mode-custom').classList.toggle('active', mode==='custom');
   document.getElementById(section+'-flash-area').style.display = mode==='flash' ? 'flex' : 'none';
   document.getElementById(section+'-quiz-area').style.display = mode==='quiz' ? 'block' : 'none';
+  document.getElementById(section+'-custom-area').style.display = mode==='custom' ? 'block' : 'none';
   if(mode==='flash') renderFlash(section);
-  else renderQuiz(section);
+  else if(mode==='quiz') renderQuiz(section);
+  else if(mode==='custom') renderCustomQuizPicker(section);
 }
 
 /* ---------------- DECK SELECT UI ---------------- */
@@ -2270,6 +2625,117 @@ function restartQuiz(section){
   renderQuiz(section);
 }
 
+/* ---------------- CUSTOM QUIZ (student-facing: pick and take a teacher-written quiz) ---------------- */
+const customQuizState = {
+  pv: { quizId:null, index:0, score:0, answered:false },
+  vc: { quizId:null, index:0, score:0, answered:false }
+};
+
+function refreshCustomQuizPicker(section){
+  // if a custom quiz is currently being taken, re-render live in case the teacher edited it
+  if(customQuizState[section].quizId && state[section].mode === 'custom'){
+    renderCustomQuizPicker(section);
+  }
+}
+
+function renderCustomQuizPicker(section){
+  const area = document.getElementById(section+'-custom-area');
+  const quizzes = (customQuizzes[section] || []);
+  const cs = customQuizState[section];
+
+  document.getElementById(section+'-progress').textContent = 'custom quiz';
+
+  if(quizzes.length === 0){
+    area.innerHTML = `<div class="empty-state"><div class="big-label">No custom quizzes yet</div>Your teacher hasn't published any custom quizzes for this section.</div>`;
+    return;
+  }
+
+  // if currently taking one, render the active quiz instead of the picker list
+  if(cs.quizId){
+    const quiz = quizzes.find(q => q.id === cs.quizId);
+    if(quiz){ renderCustomQuizQuestion(section, quiz); return; }
+    cs.quizId = null; // quiz was deleted mid-attempt, fall back to picker
+  }
+
+  area.innerHTML = `
+    <div class="cq-picker-list">
+      ${quizzes.map(q => `
+        <button class="student-pick-btn" onclick="startCustomQuizAttempt('${section}','${q.id}')">
+          ${escapeHtml(q.name)}
+          <span class="cq-picker-count">${q.questions.length} question${q.questions.length===1?'':'s'}</span>
+        </button>`).join('')}
+    </div>`;
+}
+
+function startCustomQuizAttempt(section, quizId){
+  customQuizState[section] = { quizId, index:0, score:0, answered:false };
+  renderCustomQuizPicker(section);
+}
+
+function exitCustomQuizAttempt(section){
+  customQuizState[section] = { quizId:null, index:0, score:0, answered:false };
+  renderCustomQuizPicker(section);
+}
+
+function renderCustomQuizQuestion(section, quiz){
+  const area = document.getElementById(section+'-custom-area');
+  const cs = customQuizState[section];
+
+  if(cs.index >= quiz.questions.length){
+    area.innerHTML = `
+      <div class="quiz-done">
+        <div class="quiz-prompt-label">${escapeHtml(quiz.name)} — complete</div>
+        <div class="big">${cs.score} / ${quiz.questions.length}</div>
+        <div class="modal-actions" style="justify-content:center; margin-top:20px;">
+          <button class="ctrl-btn" onclick="startCustomQuizAttempt('${section}','${quiz.id}')">Try again</button>
+          <button class="ctrl-btn" onclick="exitCustomQuizAttempt('${section}')">Back to quiz list</button>
+        </div>
+      </div>`;
+    document.getElementById(section+'-progress').textContent = 'finished';
+    return;
+  }
+
+  const q = quiz.questions[cs.index];
+  cs.answered = false;
+  document.getElementById(section+'-progress').textContent = `question ${cs.index+1} of ${quiz.questions.length}`;
+
+  const optsHTML = q.options.map((opt, i) =>
+    `<button class="quiz-opt" data-correct="${i===q.correctIndex}" onclick="answerCustomQuiz('${section}', this)">${escapeHtml(opt)}</button>`
+  ).join('');
+
+  area.innerHTML = `
+    <div class="quiz-question">
+      <div class="quiz-prompt-label">${escapeHtml(quiz.name)} · question ${cs.index+1}</div>
+      <div class="quiz-prompt">${escapeHtml(q.prompt)}</div>
+    </div>
+    <div class="quiz-options">${optsHTML}</div>
+    <div class="quiz-footer">
+      <span class="score-tag">score: ${cs.score} / ${cs.index}</span>
+      <button class="ctrl-btn" id="${section}-cq-exit" onclick="exitCustomQuizAttempt('${section}')">Exit quiz</button>
+      <button class="ctrl-btn" id="${section}-cq-next" style="display:none;" onclick="nextCustomQuizQuestion('${section}')">Next question →</button>
+    </div>
+  `;
+}
+
+function answerCustomQuiz(section, btnEl){
+  const cs = customQuizState[section];
+  if(cs.answered) return;
+  cs.answered = true;
+  const chosenCorrect = btnEl.getAttribute('data-correct') === 'true';
+  document.querySelectorAll('#'+section+'-custom-area .quiz-opt').forEach(b=>{
+    b.disabled = true;
+    if(b.getAttribute('data-correct') === 'true') b.classList.add('correct');
+    else if(b === btnEl) b.classList.add('incorrect');
+  });
+  if(chosenCorrect) cs.score++;
+  document.getElementById(section+'-cq-next').style.display = 'inline-block';
+}
+
+function nextCustomQuizQuestion(section){
+  customQuizState[section].index++;
+  renderCustomQuizPicker(section);
+}
+
 /* ---------------- UTIL ---------------- */
 // Joins verb + particle for display, omitting the extra space when there's no particle
 function pvHeadword(item){
@@ -2343,7 +2809,7 @@ function closeTeacherPanel(){
 
 function setTpTab(tab){
   tpCurrentTab = tab;
-  ['decks','add','import'].forEach(t=>{
+  ['decks','add','import','quizzes'].forEach(t=>{
     document.getElementById('tp-tab-'+t).classList.toggle('active', t===tab);
     document.getElementById('tp-pane-'+t).classList.toggle('active', t===tab);
   });
@@ -2372,6 +2838,11 @@ function renderTeacherPanel(){
   resetUnifiedDrop();
   clearStatus('add-status');
   clearStatus('import-status');
+
+  // custom quizzes tab
+  const cqSectionSelect = document.getElementById('cq-section-select');
+  if(cqSectionSelect) cqSectionSelect.value = section;
+  renderCustomQuizManager();
 }
 
 function populateDeckDropdown(selectId, section){
@@ -3392,6 +3863,7 @@ connectToCloud(function(){
   renderFlash('vc');
 });
 connectRosterToCloud();
+connectCustomQuizzesToCloud();
 
 // Restore a previous login/mode if it hasn't expired yet, so refreshing the page
 // doesn't force the person to choose student/teacher and re-enter the password again.
