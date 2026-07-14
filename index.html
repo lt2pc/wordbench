@@ -1020,6 +1020,49 @@
     position:relative;
     overflow:hidden;
   }
+  /* ---------- LOBBY MASCOT ---------- */
+  .mascot-wrap{
+    position:absolute;
+    right:20px;
+    top:100px;
+    width:80px;
+    height:80px;
+    pointer-events:none;
+    transition: top 0.5s cubic-bezier(.34,1.56,.64,1), transform 0.4s ease;
+    z-index:5;
+  }
+  .mascot-wrap.mascot-looking{ transform: translateX(-6px) scale(1.08); }
+  .mascot-wrap.mascot-excited{ animation: mascotExcited 0.5s ease-in-out infinite; }
+  #mascot-svg{ overflow:visible; }
+  .mascot-idle-bob{ animation: mascotBob 2.6s ease-in-out infinite; transform-origin: 50px 65px; }
+  .mascot-wrap.mascot-looking .mascot-idle-bob{ animation: mascotAlert 0.6s ease-in-out infinite; }
+  .mascot-wrap.mascot-wiggle .mascot-idle-bob{ animation: mascotWiggle 0.6s ease-in-out; }
+  .mascot-pupil{ transition: cx 0.25s ease, cy 0.15s ease; }
+
+  @keyframes mascotBob{
+    0%, 100%{ transform: translateY(0) rotate(0deg); }
+    50%{ transform: translateY(-6px) rotate(-2deg); }
+  }
+  @keyframes mascotAlert{
+    0%, 100%{ transform: translateY(0) rotate(-3deg) scaleX(1); }
+    50%{ transform: translateY(-2px) rotate(3deg) scaleX(1.03); }
+  }
+  @keyframes mascotWiggle{
+    0%{ transform: rotate(0deg) scale(1); }
+    20%{ transform: rotate(-14deg) scale(1.05); }
+    40%{ transform: rotate(10deg) scale(0.95); }
+    60%{ transform: rotate(-8deg) scale(1.05); }
+    80%{ transform: rotate(4deg) scale(1); }
+    100%{ transform: rotate(0deg) scale(1); }
+  }
+  @keyframes mascotExcited{
+    0%, 100%{ transform: translateX(-6px) scale(1.08) translateY(0); }
+    50%{ transform: translateX(-6px) scale(1.12) translateY(-4px); }
+  }
+  @media (max-width:680px){
+    .mascot-wrap{ display:none; } /* not enough room beside a narrow modal */
+    #student-lobby-modal{ padding-right:32px !important; }
+  }
   .modal::before{
     content:'';
     position:absolute;
@@ -1573,13 +1616,32 @@
 
 <!-- STUDENT LOBBY: pick who you are before entering -->
 <div class="modal-overlay" id="student-lobby" style="background:var(--paper); align-items:center;" onclick="if(event.target === this) closeStudentLobby()">
-  <div class="modal" style="max-width:480px;">
+  <div class="modal" style="max-width:600px; padding-right:150px;" id="student-lobby-modal">
     <div class="modal-head">
       <div class="modal-title">Who are you?</div>
       <button class="modal-close" onclick="closeStudentLobby()" aria-label="Close">&times;</button>
     </div>
     <div class="modal-sub" style="margin-bottom:20px;">pick your name to start studying</div>
-    <div id="student-lobby-list"></div>
+    <div id="student-lobby-list" onmouseleave="mascotGoIdle()"></div>
+
+    <!-- Wordbench mascot: a small bouncy pink "&" blob that idles in the corner
+         and scurries over to peek at whichever student name is hovered. Pure
+         inline SVG + CSS animation, no external assets. -->
+    <div class="mascot-wrap" id="mascot-wrap" aria-hidden="true">
+      <svg id="mascot-svg" viewBox="0 0 100 100" width="72" height="72">
+        <g id="mascot-body-group" class="mascot-idle-bob">
+          <ellipse cx="50" cy="58" rx="34" ry="30" fill="#EC4899" />
+          <ellipse cx="50" cy="30" rx="15" ry="13" fill="#EC4899" />
+          <circle cx="38" cy="55" r="9" fill="#fff"/>
+          <circle cx="62" cy="55" r="9" fill="#fff"/>
+          <circle class="mascot-pupil" id="mascot-pupil-l" cx="40" cy="56" r="4" fill="#1A1625"/>
+          <circle class="mascot-pupil" id="mascot-pupil-r" cx="64" cy="56" r="4" fill="#1A1625"/>
+          <path d="M 40 72 Q 50 80 60 72" stroke="#831843" stroke-width="3" fill="none" stroke-linecap="round" id="mascot-mouth"/>
+          <ellipse cx="24" cy="66" rx="6" ry="4" fill="#F9A8D4" opacity="0.7"/>
+          <ellipse cx="76" cy="66" rx="6" ry="4" fill="#F9A8D4" opacity="0.7"/>
+        </g>
+      </svg>
+    </div>
   </div>
 </div>
 
@@ -4826,6 +4888,68 @@ function closeStudentLobby(){
   document.getElementById('student-lobby').classList.remove('open');
 }
 
+/* ---------------- LOBBY MASCOT ----------------
+   A small decorative pink "&" blob that lives in the student-picker modal.
+   Purely cosmetic — idles with a gentle bob, and when a student name is
+   hovered it slides vertically to sit beside that row and perks up, like it's
+   curious who's about to be picked. Includes a couple of small "personality"
+   touches: a longer hover triggers a more excited bounce, and it does a random
+   little wiggle every so often even when nothing is being hovered, so the
+   lobby doesn't feel static while someone's deciding which name is theirs. */
+let mascotHoverTimer = null;
+let mascotIdleWiggleTimer = null;
+
+function mascotLookAt(buttonEl){
+  const wrap = document.getElementById('mascot-wrap');
+  const modal = document.getElementById('student-lobby-modal');
+  if(!wrap || !modal) return;
+
+  const modalRect = modal.getBoundingClientRect();
+  const btnRect = buttonEl.getBoundingClientRect();
+  // Center the mascot vertically on the hovered row, relative to the modal
+  const targetTop = (btnRect.top - modalRect.top) + (btnRect.height/2) - (wrap.offsetHeight/2);
+
+  wrap.style.top = `${targetTop}px`;
+  wrap.classList.add('mascot-looking');
+  wrap.classList.remove('mascot-excited');
+
+  // eyes glance slightly toward the row it's peeking at
+  const pupilL = document.getElementById('mascot-pupil-l');
+  const pupilR = document.getElementById('mascot-pupil-r');
+  if(pupilL && pupilR){ pupilL.setAttribute('cx','38'); pupilR.setAttribute('cx','62'); }
+
+  clearTimeout(mascotHoverTimer);
+  mascotHoverTimer = setTimeout(()=>{
+    wrap.classList.add('mascot-excited'); // lingering on one name a bit long gets a happier bounce
+  }, 1400);
+}
+
+function mascotGoIdle(){
+  const wrap = document.getElementById('mascot-wrap');
+  if(!wrap) return;
+  clearTimeout(mascotHoverTimer);
+  wrap.classList.remove('mascot-looking','mascot-excited');
+  wrap.style.top = '100px'; // resting spot near the top of the list
+  const pupilL = document.getElementById('mascot-pupil-l');
+  const pupilR = document.getElementById('mascot-pupil-r');
+  if(pupilL && pupilR){ pupilL.setAttribute('cx','40'); pupilR.setAttribute('cx','64'); }
+}
+
+// Every so often, if nobody's hovering anything, give the mascot a little
+// unprompted wiggle so the lobby feels alive rather than a static picker.
+function mascotScheduleIdleWiggle(){
+  clearTimeout(mascotIdleWiggleTimer);
+  mascotIdleWiggleTimer = setTimeout(()=>{
+    const wrap = document.getElementById('mascot-wrap');
+    if(wrap && document.getElementById('student-lobby').classList.contains('open') && !wrap.classList.contains('mascot-looking')){
+      wrap.classList.add('mascot-wiggle');
+      setTimeout(()=> wrap.classList.remove('mascot-wiggle'), 650);
+    }
+    mascotScheduleIdleWiggle();
+  }, 3000 + Math.random()*3000);
+}
+mascotScheduleIdleWiggle();
+
 function renderStudentLobby(){
   const list = document.getElementById('student-lobby-list');
   if(!list) return;
@@ -4845,7 +4969,7 @@ function renderStudentLobby(){
   Object.keys(byClass).sort().forEach(className => {
     html += `<div class="roster-group-label">${escapeHtml(className)}</div>`;
     byClass[className].forEach(s => {
-      html += `<button class="student-pick-btn" onclick="pickStudent('${s.id}')">${escapeHtml(s.name)}</button>`;
+      html += `<button class="student-pick-btn" onclick="pickStudent('${s.id}')" onmouseenter="mascotLookAt(this)">${escapeHtml(s.name)}</button>`;
     });
   });
   list.innerHTML = html;
