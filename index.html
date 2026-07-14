@@ -235,6 +235,90 @@
     padding:28px 24px 80px;
   }
 
+  .app-columns{
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    gap:0;
+  }
+  .app-columns main{ margin:0; flex-shrink:0; }
+
+  /* ---------- CLASSROOM CROWS-NEST (teacher-only sidebar) ---------- */
+  .crows-nest{
+    width:300px;
+    flex-shrink:0;
+    margin:28px 24px 80px 0;
+    position:sticky;
+    top:28px;
+  }
+  .crows-nest-heading{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:1.15rem;
+    margin-bottom:4px;
+  }
+  .crows-nest-sub{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.72rem;
+    color:var(--ink-soft);
+    margin-bottom:14px;
+  }
+  .crows-nest-list{
+    background:var(--paper);
+    border:1.5px solid var(--line);
+    border-radius:18px;
+    padding:6px;
+    max-height:70vh;
+    overflow-y:auto;
+  }
+  .crows-nest-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:10px 10px;
+    border-radius:12px;
+  }
+  .crows-nest-row + .crows-nest-row{ border-top:1px solid var(--line); }
+  .crows-nest-name{
+    font-family:'Inter', sans-serif;
+    font-weight:700;
+    font-size:0.82rem;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    flex:0 0 30%;
+  }
+  .crows-nest-bar-track{
+    flex:1 1 auto;
+    height:8px;
+    border-radius:99px;
+    background:var(--paper-dim);
+    overflow:hidden;
+  }
+  .crows-nest-bar-fill{
+    height:100%;
+    border-radius:99px;
+    background:var(--success);
+    transition: width 0.3s ease;
+  }
+  .crows-nest-count{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.7rem;
+    color:var(--ink-soft);
+    flex:0 0 auto;
+    white-space:nowrap;
+  }
+  .crows-nest-empty{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.76rem;
+    color:var(--ink-soft);
+    padding:16px 10px;
+    text-align:center;
+  }
+  @media (max-width:1400px){
+    .crows-nest{ display:none; } /* not enough room beside the centered column — teachers can still use Teacher tools → Student progress */
+  }
+
   .section{ display:none; }
   .section.active{ display:block; animation: fadeIn 0.25s ease; }
   @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
@@ -1412,6 +1496,7 @@
   <button class="tab vc" role="tab" aria-selected="false" id="tab-vc" onclick="showSection('vc')">Vocabulary</button>
 </nav>
 
+<div class="app-columns">
 <main id="main">
 
   <!-- PHRASAL VERBS SECTION -->
@@ -1457,6 +1542,15 @@
   </section>
 
 </main>
+
+<!-- Teacher-only sidebar: live per-deck class roster progress. Named "The
+     Crow's Nest" — the lookout post where you watch the whole class from above. -->
+<aside class="crows-nest" id="crows-nest" style="display:none;">
+  <div class="crows-nest-heading">🔭 The Crow's Nest</div>
+  <div class="crows-nest-sub">keeping watch over this deck</div>
+  <div class="crows-nest-list" id="crows-nest-list"></div>
+</aside>
+</div>
 
 <footer>wordbench — built for classroom practice. use "Teacher tools" to create and manage your own word decks.</footer>
 </div> <!-- end app-shell -->
@@ -1756,6 +1850,7 @@ function connectRosterToCloud(){
   if(!firebaseReady){
     studentRoster = loadRosterLocalFallback();
     renderStudentRoster();
+    renderCrowsNest(currentActiveSection());
     return;
   }
   const ref = db.collection(ROSTER_DOC_PATH.collection).doc(ROSTER_DOC_PATH.doc);
@@ -1768,11 +1863,13 @@ function connectRosterToCloud(){
     }
     renderStudentRoster();
     renderStudentLobby();
+    renderCrowsNest(currentActiveSection());
   }, (err)=>{
     console.error('Roster sync error:', err);
     studentRoster = loadRosterLocalFallback();
     renderStudentRoster();
     renderStudentLobby();
+    renderCrowsNest(currentActiveSection());
   });
 }
 
@@ -2065,6 +2162,7 @@ function connectProgressToCloud(){
 function refreshCurrentModeArea(section){
   if(state[section].mode === 'flash') renderFlash(section);
   renderDeckProgress(section);
+  renderCrowsNest(section);
   if(document.getElementById('teacher-modal') && document.getElementById('teacher-modal').classList.contains('open')){
     renderTeacherProgressTab();
   }
@@ -2391,8 +2489,8 @@ function dataFor(section){
 
 /* ---------------- STUDY STATE ---------------- */
 const state = {
-  pv: { mode:'flash', srsQueue:[], srsPos:0, srsFlipped:false, srsSessionStats:null, quizIndex:0, quizOrder:[], score:0, answered:false },
-  vc: { mode:'flash', srsQueue:[], srsPos:0, srsFlipped:false, srsSessionStats:null, quizIndex:0, quizOrder:[], score:0, answered:false },
+  pv: { mode:'flash', srsQueue:[], srsPos:0, srsFlipped:false, srsSessionStats:null, teacherFlashIndex:0, teacherFlashOrder:[], quizIndex:0, quizOrder:[], score:0, answered:false },
+  vc: { mode:'flash', srsQueue:[], srsPos:0, srsFlipped:false, srsSessionStats:null, teacherFlashIndex:0, teacherFlashOrder:[], quizIndex:0, quizOrder:[], score:0, answered:false },
 };
 
 function resetStudyState(section){
@@ -2400,6 +2498,8 @@ function resetStudyState(section){
   state[section].srsPos = 0;
   state[section].srsFlipped = false;
   state[section].srsSessionStats = null;
+  state[section].teacherFlashIndex = 0;
+  state[section].teacherFlashOrder = [];
   state[section].quizIndex = 0;
   state[section].quizOrder = [];
   state[section].score = 0;
@@ -2420,6 +2520,7 @@ function showSection(section){
   document.getElementById('vc-panel').classList.toggle('active', section==='vc');
   document.getElementById('tab-pv').setAttribute('aria-selected', section==='pv');
   document.getElementById('tab-vc').setAttribute('aria-selected', section==='vc');
+  renderCrowsNest(section);
 }
 
 function currentActiveSection(){
@@ -2450,6 +2551,7 @@ function refreshDeckSelect(section){
     sel.disabled = true;
     document.getElementById(section+'-deck-count').textContent = 'There are no decks here.';
     renderDeckProgress(section);
+    renderCrowsNest(section);
     return;
   }
 
@@ -2461,6 +2563,7 @@ function refreshDeckSelect(section){
   document.getElementById(section+'-deck-count').textContent =
     `${dataFor(section).length} card${dataFor(section).length===1?'':'s'}`;
   renderDeckProgress(section);
+  renderCrowsNest(section);
 }
 
 function switchDeck(section, deckId){
@@ -2526,6 +2629,49 @@ function renderDeckProgress(section){
         </div>
       </div>
     </div>`;
+}
+
+// Renders "The Crow's Nest" — the teacher-only sidebar list of every student's
+// progress on whichever deck is currently selected in the given section. One
+// row per student: name, a filled progress bar (% mastered), and the mastered
+// count — unique per deck, so switching decks in the dropdown updates this list.
+function renderCrowsNest(section){
+  const nest = document.getElementById('crows-nest');
+  const list = document.getElementById('crows-nest-list');
+  if(!nest || !list) return;
+
+  if(!isTeacherMode() || section !== currentActiveSection()){
+    nest.style.display = 'none';
+    return;
+  }
+  nest.style.display = 'block';
+
+  const deck = activeDeck(section);
+  const data = dataFor(section);
+
+  if(!deck || data.length === 0){
+    list.innerHTML = `<div class="crows-nest-empty">This deck has no cards yet.</div>`;
+    return;
+  }
+  if(studentRoster.length === 0){
+    list.innerHTML = `<div class="crows-nest-empty">No students registered yet.</div>`;
+    return;
+  }
+
+  const deckId = deckStore[section].selectedDeckId;
+  const sorted = studentRoster.slice().sort((a,b)=> a.name.localeCompare(b.name));
+
+  list.innerHTML = sorted.map(student=>{
+    const summary = deckProgressSummary(student.id, section, deckId, data);
+    return `
+      <div class="crows-nest-row">
+        <span class="crows-nest-name" title="${escapeHtml(student.name)}">${escapeHtml(student.name)}</span>
+        <span class="crows-nest-bar-track">
+          <span class="crows-nest-bar-fill" style="width:${summary.pct}%;"></span>
+        </span>
+        <span class="crows-nest-count">${summary.mastered}/${summary.total}</span>
+      </div>`;
+  }).join('');
 }
 
 /* ---------------- STUDENT PROGRESS (teacher view) ---------------- */
@@ -2644,6 +2790,90 @@ function buildSrsQueue(section){
   return shuffle(due).concat(shuffle(notDue));
 }
 
+// Plain flip-through-the-deck browser for teachers — the original flashcard
+// experience, with no self-rating and no effect on any student's mastery.
+// Teachers use this to preview/proofread a deck's content; per-student
+// spaced-repetition tracking only applies to students (see renderFlash below).
+function renderTeacherFlashPreview(section){
+  const data = dataFor(section);
+  const area = document.getElementById(section+'-flash-area');
+
+  if(state[section].teacherFlashOrder.length === 0){
+    state[section].teacherFlashOrder = shuffle(data.map(w => w.id));
+  }
+  if(state[section].teacherFlashIndex >= state[section].teacherFlashOrder.length){
+    state[section].teacherFlashIndex = 0;
+  }
+
+  const wordId = state[section].teacherFlashOrder[state[section].teacherFlashIndex];
+  const item = data.find(w => w.id === wordId) || data[0];
+
+  document.getElementById(section+'-progress').textContent =
+    `card ${state[section].teacherFlashIndex+1} of ${data.length} · teacher preview`;
+
+  let frontHTML, backHTML;
+  if(section==='pv'){
+    const phoneticHTML = item.phonetic ? `<div class="phonetic-tag">${escapeHtml(item.phonetic)}</div>` : '';
+    const { verb: cleanVerb, particle: cleanParticle, level } = pvHeadwordAndLevel(item);
+    const levelBadgeHTML = level ? `<span class="level-badge">${escapeHtml(level)}</span>` : '';
+    const comboHTML = cleanParticle
+      ? `<span class="verb">${escapeHtml(cleanVerb)}</span><span class="join">+</span><span class="particle">${escapeHtml(cleanParticle)}</span>`
+      : `<span class="verb">${escapeHtml(cleanVerb)}</span>`;
+    frontHTML = `<div class="combo">${comboHTML}${levelBadgeHTML}</div>${phoneticHTML}<div class="hint">tap to reveal meaning</div>`;
+
+    const synAntHTML = (item.synonym || item.antonym) ? `
+      <div class="syn-ant-row">
+        ${item.synonym ? `<div class="syn-ant-chip syn-chip"><span class="syn-ant-label">Synonym</span>${escapeHtml(item.synonym)}</div>` : ''}
+        ${item.antonym ? `<div class="syn-ant-chip ant-chip"><span class="syn-ant-label">Antonym</span>${escapeHtml(item.antonym)}</div>` : ''}
+      </div>` : '';
+    backHTML = `
+      <div class="back-headword">${escapeHtml(pvHeadword(item))}</div>
+      <div class="back-meaning">${escapeHtml(item.meaning)}</div>
+      ${synAntHTML}
+      <div class="back-example">"${escapeHtml(item.example)}"</div>`;
+  } else {
+    frontHTML = `<div class="headword">${escapeHtml(item.word)}</div><div class="pos-tag">${escapeHtml(item.pos||'')}</div><div class="hint">tap to reveal meaning</div>`;
+    backHTML = `<div class="back-meaning">${escapeHtml(item.meaning)}</div><div class="back-example">"${escapeHtml(item.example)}"</div>`;
+  }
+
+  area.innerHTML = `
+    <div class="flip-card" id="${section}-flipcard" onclick="this.classList.toggle('flipped')" role="button" tabindex="0" aria-label="Flashcard, tap to flip">
+      <div class="flip-inner">
+        <div class="face front">${frontHTML}</div>
+        <div class="face back">${backHTML}</div>
+      </div>
+    </div>
+    <div class="card-controls">
+      <button class="ctrl-btn" onclick="teacherPrevCard('${section}')">← Previous</button>
+      <button class="ctrl-btn" onclick="teacherShuffleCards('${section}')">Shuffle</button>
+      <button class="ctrl-btn" onclick="teacherNextCard('${section}')">Next →</button>
+    </div>
+  `;
+
+  const card = document.getElementById(section+'-flipcard');
+  card.addEventListener('keydown', (e)=>{
+    if(e.key==='Enter' || e.key===' '){ e.preventDefault(); card.classList.toggle('flipped'); }
+  });
+}
+
+function teacherNextCard(section){
+  const total = state[section].teacherFlashOrder.length;
+  if(total===0) return;
+  state[section].teacherFlashIndex = (state[section].teacherFlashIndex+1) % total;
+  renderTeacherFlashPreview(section);
+}
+function teacherPrevCard(section){
+  const total = state[section].teacherFlashOrder.length;
+  if(total===0) return;
+  state[section].teacherFlashIndex = (state[section].teacherFlashIndex-1+total) % total;
+  renderTeacherFlashPreview(section);
+}
+function teacherShuffleCards(section){
+  state[section].teacherFlashOrder = shuffle(dataFor(section).map(w => w.id));
+  state[section].teacherFlashIndex = 0;
+  renderTeacherFlashPreview(section);
+}
+
 function renderFlash(section){
   const deck = activeDeck(section);
   const data = dataFor(section);
@@ -2662,8 +2892,7 @@ function renderFlash(section){
   }
 
   if(isTeacherMode()){
-    area.innerHTML = `<div class="empty-state"><div class="big-label">Spaced-repetition review is student-only</div>Switch to a student profile (Switch view) to study with progress tracking. As a teacher you can review each student's mastery in Teacher tools → Student progress.</div>`;
-    document.getElementById(section+'-progress').textContent = 'teacher view';
+    renderTeacherFlashPreview(section);
     return;
   }
 
