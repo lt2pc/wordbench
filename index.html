@@ -241,7 +241,7 @@
     align-items:flex-start;
     gap:0;
   }
-  .app-columns main{ margin:0; flex-shrink:0; }
+  .app-columns main{ margin:0; flex-shrink:1; min-width:0; }
 
   /* ---------- CLASSROOM CROWS-NEST (teacher-only sidebar) ---------- */
   .crows-nest{
@@ -315,8 +315,8 @@
     padding:16px 10px;
     text-align:center;
   }
-  @media (max-width:1400px){
-    .crows-nest{ display:none; } /* not enough room beside the centered column — teachers can still use Teacher tools → Student progress */
+  @media (max-width:1050px){
+    .crows-nest{ display:none !important; } /* not enough room beside the centered column — teachers can still use Teacher tools → Student progress */
   }
 
   .section{ display:none; }
@@ -2640,7 +2640,13 @@ function renderCrowsNest(section){
   const list = document.getElementById('crows-nest-list');
   if(!nest || !list) return;
 
-  if(!isTeacherMode() || section !== currentActiveSection()){
+  // Only ever act when called for whichever section is actually on screen.
+  // A call for the inactive section is a no-op (not a "hide") so that calling
+  // this for both sections back-to-back — which several sync/refresh paths do —
+  // can never have the second call stomp on the first one's correct render.
+  if(section !== currentActiveSection()) return;
+
+  if(!isTeacherMode()){
     nest.style.display = 'none';
     return;
   }
