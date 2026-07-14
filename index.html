@@ -417,16 +417,11 @@
     gap:14px;
   }
   .flip-card{
-    width:clamp(420px, 34vw, 600px);
+    width:clamp(480px, 40vw, 680px);
     height:clamp(320px, 28vw, 420px);
     perspective:1400px;
     cursor:pointer;
     transition: transform 0.25s ease;
-  }
-  /* Teacher preview has no rating column beside it, so the card can use the
-     full width that was always intended for that view. */
-  .card-stage:not(:has(.srs-rate-col, .srs-rate-col-placeholder)) .flip-card{
-    width:clamp(480px, 40vw, 680px);
   }
   .flip-card:hover{ transform: translateY(-4px); }
   .flip-inner{
