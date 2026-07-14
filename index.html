@@ -390,6 +390,8 @@
     border:1.5px dashed var(--line);
     border-radius:18px;
     color:var(--ink-soft);
+    max-width:600px;
+    width:100%;
   }
   .empty-state .big-label{
     font-family:'Fraunces', serif;
@@ -402,9 +404,17 @@
   /* ---------- FLASHCARD ---------- */
   .card-stage{
     display:flex;
+    flex-direction:row;
+    align-items:center;
+    justify-content:center;
+    gap:22px;
+    min-height:clamp(320px, 28vw, 420px);
+  }
+  .card-stage-card-col{
+    display:flex;
     flex-direction:column;
     align-items:center;
-    gap:22px;
+    gap:14px;
   }
   .flip-card{
     width:100%;
@@ -413,6 +423,10 @@
     perspective:1400px;
     cursor:pointer;
     transition: transform 0.25s ease;
+  }
+  /* Student review view needs a narrower card to leave room for the rating column beside it */
+  .card-stage:has(.srs-rate-col, .srs-rate-col-placeholder) .flip-card{
+    max-width:clamp(420px, 34vw, 600px);
   }
   .flip-card:hover{ transform: translateY(-4px); }
   .flip-inner{
@@ -485,17 +499,20 @@
   }
   .flip-card.flipped .combo{ transform: scale(0.001); transition: transform 0.01s; }
 
-  /* ---------- SRS RATING BUTTONS ---------- */
-  .srs-rate-row{
+  /* ---------- SRS RATING BUTTONS (side column, best → worst top to bottom) ---------- */
+  .srs-rate-col{
     display:flex;
+    flex-direction:column;
     gap:10px;
-    width:100%;
-    max-width:clamp(480px, 40vw, 680px);
-    flex-wrap:wrap;
+    width:150px;
+    flex-shrink:0;
+  }
+  .srs-rate-col-placeholder{
+    width:150px;
+    flex-shrink:0;
   }
   .srs-rate-btn{
-    flex:1 1 0;
-    min-width:100px;
+    width:100%;
     font-family:'Inter', sans-serif;
     font-weight:700;
     font-size:0.88rem;
@@ -511,7 +528,7 @@
     align-items:center;
     gap:3px;
   }
-  .srs-rate-btn:hover{ transform:translateY(-2px); }
+  .srs-rate-btn:hover{ transform:translateX(-2px); }
   .srs-rate-btn .srs-rate-sub{
     font-family:'JetBrains Mono', monospace;
     font-size:0.68rem;
@@ -526,6 +543,13 @@
   .srs-rate-good:hover{ background: rgba(139,212,80,0.14); border-color:var(--success); }
   .srs-rate-easy{ border-color: rgba(101,179,46,0.4); }
   .srs-rate-easy:hover{ background: rgba(101,179,46,0.16); border-color:var(--success-deep); }
+
+  @media (max-width:820px){
+    .card-stage{ flex-direction:column; min-height:0; }
+    .srs-rate-col, .srs-rate-col-placeholder{ width:100%; max-width:clamp(420px, 34vw, 600px); }
+    .srs-rate-col{ flex-direction:row; flex-wrap:wrap; }
+    .srs-rate-col .srs-rate-btn{ flex:1 1 100px; }
+  }
 
   .srs-status-badge{
     font-family:'JetBrains Mono', monospace;
@@ -2779,21 +2803,36 @@ function renderTeacherProgressTab(){
    dueDate has arrived), studied one at a time, and rated Again/Hard/Good/Easy —
    which feeds directly into that student's spaced-repetition schedule. */
 
-// Builds today's review queue for the current student: due cards (including
-// "new" ones never studied) first — new cards shuffled in on top since there's
-// no due date to sort by yet — then hands back the ordered list of word ids.
+// A session is capped at a fixed batch size, the same way Anki caps "new cards
+// per day" — reviewing an entire large deck in one sitting isn't how spaced
+// repetition is meant to work, and it's also just exhausting. Within that cap,
+// cards are prioritized so the most urgent things surface first.
+const SRS_SESSION_SIZE = 20;
+
+// Builds one review session for the current student: forgotten cards first
+// (most urgent — these were being learned and got lost), then other cards
+// already due for review, then new cards never seen yet, up to
+// SRS_SESSION_SIZE total. If there aren't enough due/new cards to fill a
+// session, cards not yet due are NOT added just to pad it out — a short
+// session (or "all caught up") is the correct, honest result.
 function buildSrsQueue(section){
   const data = dataFor(section);
   const deckId = deckStore[section].selectedDeckId;
   if(!currentStudent) return data.map(w => w.id); // teacher preview: show everything in order
 
-  const due = [];
-  const notDue = [];
+  const forgotten = [];
+  const dueReview = []; // learning/mastered cards whose dueDate has arrived
+  const fresh = [];      // never studied
+
   data.forEach(w=>{
     const cs = getCardState(currentStudent.id, section, deckId, w.id);
-    if(isCardDue(cs)) due.push(w.id); else notDue.push(w.id);
+    if(cs.status === 'new') fresh.push(w.id);
+    else if(cs.status === 'forgotten') forgotten.push(w.id);
+    else if(isCardDue(cs)) dueReview.push(w.id);
   });
-  return shuffle(due).concat(shuffle(notDue));
+
+  const ordered = shuffle(forgotten).concat(shuffle(dueReview)).concat(shuffle(fresh));
+  return ordered.slice(0, SRS_SESSION_SIZE);
 }
 
 // Plain flip-through-the-deck browser for teachers — the original flashcard
@@ -2843,16 +2882,18 @@ function renderTeacherFlashPreview(section){
   }
 
   area.innerHTML = `
-    <div class="flip-card" id="${section}-flipcard" onclick="this.classList.toggle('flipped')" role="button" tabindex="0" aria-label="Flashcard, tap to flip">
-      <div class="flip-inner">
-        <div class="face front">${frontHTML}</div>
-        <div class="face back">${backHTML}</div>
+    <div class="card-stage-card-col">
+      <div class="flip-card" id="${section}-flipcard" onclick="this.classList.toggle('flipped')" role="button" tabindex="0" aria-label="Flashcard, tap to flip">
+        <div class="flip-inner">
+          <div class="face front">${frontHTML}</div>
+          <div class="face back">${backHTML}</div>
+        </div>
       </div>
-    </div>
-    <div class="card-controls">
-      <button class="ctrl-btn" onclick="teacherPrevCard('${section}')">← Previous</button>
-      <button class="ctrl-btn" onclick="teacherShuffleCards('${section}')">Shuffle</button>
-      <button class="ctrl-btn" onclick="teacherNextCard('${section}')">Next →</button>
+      <div class="card-controls">
+        <button class="ctrl-btn" onclick="teacherPrevCard('${section}')">← Previous</button>
+        <button class="ctrl-btn" onclick="teacherShuffleCards('${section}')">Shuffle</button>
+        <button class="ctrl-btn" onclick="teacherNextCard('${section}')">Next →</button>
+      </div>
     </div>
   `;
 
@@ -2919,7 +2960,7 @@ function renderFlash(section){
 
   const queue = state[section].srsQueue;
 
-  if(state[section].srsSessionStats || state[section].srsPos >= queue.length){
+  if(state[section].srsPos >= queue.length){
     renderSrsSessionDone(section);
     return;
   }
@@ -2967,23 +3008,27 @@ function renderFlash(section){
   const statusBadgeHTML = `<span class="srs-status-badge srs-status-${cardState.status}">${cardState.status}</span>`;
   const flippedClass = state[section].srsFlipped ? ' flipped' : '';
 
-  const rateRowHTML = !state[section].srsFlipped ? '' : `
-    <div class="srs-rate-row">
-      <button class="srs-rate-btn srs-rate-again" onclick="rateSrsCard('${section}','again')">Again<span class="srs-rate-sub">forgot it</span></button>
-      <button class="srs-rate-btn srs-rate-hard" onclick="rateSrsCard('${section}','hard')">Hard<span class="srs-rate-sub">barely got it</span></button>
-      <button class="srs-rate-btn srs-rate-good" onclick="rateSrsCard('${section}','good')">Good<span class="srs-rate-sub">got it</span></button>
+  const rateColHTML = !state[section].srsFlipped
+    ? `<div class="srs-rate-col-placeholder"></div>`
+    : `
+    <div class="srs-rate-col">
       <button class="srs-rate-btn srs-rate-easy" onclick="rateSrsCard('${section}','easy')">Easy<span class="srs-rate-sub">no effort</span></button>
+      <button class="srs-rate-btn srs-rate-good" onclick="rateSrsCard('${section}','good')">Good<span class="srs-rate-sub">got it</span></button>
+      <button class="srs-rate-btn srs-rate-hard" onclick="rateSrsCard('${section}','hard')">Hard<span class="srs-rate-sub">barely got it</span></button>
+      <button class="srs-rate-btn srs-rate-again" onclick="rateSrsCard('${section}','again')">Again<span class="srs-rate-sub">forgot it</span></button>
     </div>`;
 
   area.innerHTML = `
-    <div style="margin-bottom:2px;">${statusBadgeHTML}</div>
-    <div class="flip-card${flippedClass}" id="${section}-flipcard" onclick="flipSrsCard('${section}')" role="button" tabindex="0" aria-label="Flashcard, tap to flip">
-      <div class="flip-inner">
-        <div class="face front">${frontHTML}</div>
-        <div class="face back">${backHTML}</div>
+    <div class="card-stage-card-col">
+      <div style="margin-bottom:2px;">${statusBadgeHTML}</div>
+      <div class="flip-card${flippedClass}" id="${section}-flipcard" onclick="flipSrsCard('${section}')" role="button" tabindex="0" aria-label="Flashcard, tap to flip">
+        <div class="flip-inner">
+          <div class="face front">${frontHTML}</div>
+          <div class="face back">${backHTML}</div>
+        </div>
       </div>
     </div>
-    ${rateRowHTML}
+    ${rateColHTML}
   `;
 
   const card = document.getElementById(section+'-flipcard');
