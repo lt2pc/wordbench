@@ -235,6 +235,40 @@
     padding:28px 24px 80px;
   }
 
+  /* ---------- COMPACT MODE (student view only) ----------
+     Teacher view keeps the original roomier spacing (already approved);
+     this tightens vertical rhythm specifically so a student's flashcard
+     session — deck picker, progress card, mode tabs, flashcard, ratings —
+     fits in one screen without scrolling. */
+  body.compact-mode main{ padding:16px 24px 24px; }
+  body.compact-mode .deck-row{ margin-bottom:10px; }
+  body.compact-mode .deck-progress-section{ margin-bottom:12px; }
+  body.compact-mode .deck-progress-heading{ font-size:1rem; margin-bottom:6px; }
+  body.compact-mode .deck-progress-card{ padding:10px 16px; gap:12px; min-width:0; }
+  body.compact-mode .progress-ring-wrap{ width:46px; height:46px; }
+  body.compact-mode .progress-ring-wrap svg{ width:46px; height:46px; }
+  body.compact-mode .deck-progress-info .deck-progress-name{ font-size:0.88rem; margin-bottom:0; }
+  body.compact-mode .deck-progress-info .deck-progress-detail{ font-size:0.72rem; }
+  body.compact-mode .deck-progress-breakdown{ margin-top:4px; gap:6px; }
+  body.compact-mode .mode-row{ margin-bottom:12px; }
+  body.compact-mode .card-stage{ min-height:clamp(230px, 20vw, 300px); }
+  body.compact-mode .flip-card{
+    height:clamp(230px, 20vw, 300px);
+    width:clamp(400px, 34vw, 560px);
+  }
+  body.compact-mode .face{ padding:16px 22px; gap:0; }
+  body.compact-mode .combo{ font-size:clamp(1.5rem, 1.8vw, 2rem); }
+  body.compact-mode .card-stage-card-col{ gap:8px; }
+  body.compact-mode .back-meaning{ font-size:0.95rem; }
+  body.compact-mode .back-example{ font-size:0.82rem; }
+  body.compact-mode .srs-rate-btn{ padding:10px 10px; }
+  body.compact-mode header.top{ padding:14px 24px 10px; }
+  body.compact-mode .brand{ font-size:1.4rem; }
+  body.compact-mode .tagline{ display:none; }
+  body.compact-mode #sync-banner{ padding:0 24px 4px; }
+  body.compact-mode nav.sections{ padding:0 24px 8px; }
+  body.compact-mode .tab{ padding:8px 18px; font-size:0.88rem; }
+
   .app-columns{
     display:flex;
     justify-content:center;
@@ -4756,6 +4790,7 @@ function finishEnteringApp(){
   document.getElementById('mode-gate').classList.remove('open');
   document.getElementById('app-shell').style.display = 'block';
   document.getElementById('teacher-tools-btn').style.display = isTeacherMode() ? 'inline-block' : 'none';
+  document.body.classList.toggle('compact-mode', !isTeacherMode());
   if(isTeacherMode()){
     document.getElementById('mode-indicator').textContent = 'Teacher view';
   } else {
