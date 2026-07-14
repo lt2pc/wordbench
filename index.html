@@ -302,17 +302,71 @@
     border:1.5px solid var(--line);
     border-radius:18px;
     padding:6px;
-    max-height:70vh;
+    max-height:min(560px, 62vh);
     overflow-y:auto;
+    scrollbar-width:thin;
+    scrollbar-color: var(--pv-primary) transparent;
+  }
+  .crows-nest-list::-webkit-scrollbar{ width:8px; }
+  .crows-nest-list::-webkit-scrollbar-track{ background:transparent; }
+  .crows-nest-list::-webkit-scrollbar-thumb{
+    background: var(--pv-primary);
+    border-radius:99px;
+    opacity:0.6;
+  }
+  .crows-nest-class-group + .crows-nest-class-group{ margin-top:14px; }
+  .crows-nest-class-header{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:6px 10px;
+    border-radius:10px;
+    font-family:'JetBrains Mono', monospace;
+    font-weight:700;
+    font-size:0.72rem;
+    letter-spacing:0.03em;
+    text-transform:uppercase;
+    margin-bottom:4px;
+  }
+  .crows-nest-class-dot{
+    width:9px; height:9px;
+    border-radius:50%;
+    flex-shrink:0;
   }
   .crows-nest-row{
     display:flex;
     align-items:center;
-    gap:10px;
+    gap:8px;
     padding:10px 10px;
     border-radius:12px;
+    position:relative;
   }
   .crows-nest-row + .crows-nest-row{ border-top:1px solid var(--line); }
+  .crows-nest-rank{
+    font-family:'JetBrains Mono', monospace;
+    font-weight:700;
+    font-size:0.72rem;
+    color:var(--ink-soft);
+    flex:0 0 20px;
+    text-align:center;
+  }
+  .crows-nest-rank.medal{
+    font-size:1rem;
+    animation: medalPulse 2.2s ease-in-out infinite;
+  }
+  .crows-nest-row.rank-1{
+    background: linear-gradient(90deg, rgba(255,215,0,0.14), transparent 70%);
+  }
+  .crows-nest-row.rank-2{
+    background: linear-gradient(90deg, rgba(192,192,192,0.16), transparent 70%);
+  }
+  .crows-nest-row.rank-3{
+    background: linear-gradient(90deg, rgba(205,127,50,0.14), transparent 70%);
+  }
+  @keyframes medalPulse{
+    0%, 100%{ filter: drop-shadow(0 0 0px rgba(255,215,0,0.6)); transform: scale(1); }
+    50%{ filter: drop-shadow(0 0 6px rgba(255,215,0,0.9)); transform: scale(1.15); }
+  }
   .crows-nest-name{
     font-family:'Inter', sans-serif;
     font-weight:700;
@@ -320,7 +374,7 @@
     white-space:nowrap;
     overflow:hidden;
     text-overflow:ellipsis;
-    flex:0 0 30%;
+    flex:0 0 26%;
   }
   .crows-nest-bar-track{
     flex:1 1 auto;
@@ -2688,6 +2742,26 @@ function renderDeckProgress(section){
 // progress on whichever deck is currently selected in the given section. One
 // row per student: name, a filled progress bar (% mastered), and the mastered
 // count — unique per deck, so switching decks in the dropdown updates this list.
+// A fixed, pleasant palette cycled deterministically per class name, so the
+// same class always gets the same color across renders/reloads without
+// needing to store anything — just a stable hash of the class name string.
+const CROWS_NEST_CLASS_COLORS = [
+  { dot: '#EC4899', bg: 'rgba(236,72,153,0.10)', text: '#9D174D' }, // pink
+  { dot: '#3B82F6', bg: 'rgba(59,130,246,0.10)', text: '#1D4ED8' }, // blue
+  { dot: '#10B981', bg: 'rgba(16,185,129,0.10)', text: '#047857' }, // green
+  { dot: '#F59E0B', bg: 'rgba(245,158,11,0.12)', text: '#B45309' }, // amber
+  { dot: '#8B5CF6', bg: 'rgba(139,92,246,0.10)', text: '#6D28D9' }, // violet
+  { dot: '#EF4444', bg: 'rgba(239,68,68,0.10)', text: '#B91C1C' }, // red
+  { dot: '#14B8A6', bg: 'rgba(20,184,166,0.10)', text: '#0F766E' }, // teal
+];
+function classColor(className){
+  let hash = 0;
+  for(let i=0;i<className.length;i++){ hash = (hash*31 + className.charCodeAt(i)) | 0; }
+  return CROWS_NEST_CLASS_COLORS[Math.abs(hash) % CROWS_NEST_CLASS_COLORS.length];
+}
+
+const MEDALS = ['🥇','🥈','🥉'];
+
 function renderCrowsNest(section){
   const nest = document.getElementById('crows-nest');
   const list = document.getElementById('crows-nest-list');
@@ -2718,17 +2792,48 @@ function renderCrowsNest(section){
   }
 
   const deckId = deckStore[section].selectedDeckId;
-  const sorted = studentRoster.slice().sort((a,b)=> a.name.localeCompare(b.name));
 
-  list.innerHTML = sorted.map(student=>{
-    const summary = deckProgressSummary(student.id, section, deckId, data);
+  // Group students by class, then rank each class's own students by mastered
+  // count (highest first) — ranking is always within-class, never across the
+  // whole roster, since classes aren't meant to be compared against each other.
+  const byClass = {};
+  studentRoster.forEach(s=>{
+    if(!byClass[s.className]) byClass[s.className] = [];
+    byClass[s.className].push(s);
+  });
+
+  const classNames = Object.keys(byClass).sort((a,b)=> a.localeCompare(b));
+
+  list.innerHTML = classNames.map(className=>{
+    const color = classColor(className);
+    const ranked = byClass[className]
+      .map(student => ({ student, summary: deckProgressSummary(student.id, section, deckId, data) }))
+      .sort((a,b) => b.summary.mastered - a.summary.mastered);
+
+    const rowsHTML = ranked.map((entry, i)=>{
+      const rank = i+1;
+      const isTop3 = rank <= 3;
+      const rankHTML = isTop3
+        ? `<span class="crows-nest-rank medal">${MEDALS[i]}</span>`
+        : `<span class="crows-nest-rank">${rank}</span>`;
+      return `
+        <div class="crows-nest-row ${isTop3 ? 'rank-'+rank : ''}">
+          ${rankHTML}
+          <span class="crows-nest-name" title="${escapeHtml(entry.student.name)}">${escapeHtml(entry.student.name)}</span>
+          <span class="crows-nest-bar-track">
+            <span class="crows-nest-bar-fill" style="width:${entry.summary.pct}%;"></span>
+          </span>
+          <span class="crows-nest-count">${entry.summary.mastered}/${entry.summary.total}</span>
+        </div>`;
+    }).join('');
+
     return `
-      <div class="crows-nest-row">
-        <span class="crows-nest-name" title="${escapeHtml(student.name)}">${escapeHtml(student.name)}</span>
-        <span class="crows-nest-bar-track">
-          <span class="crows-nest-bar-fill" style="width:${summary.pct}%;"></span>
-        </span>
-        <span class="crows-nest-count">${summary.mastered}/${summary.total}</span>
+      <div class="crows-nest-class-group">
+        <div class="crows-nest-class-header" style="background:${color.bg}; color:${color.text};">
+          <span class="crows-nest-class-dot" style="background:${color.dot};"></span>
+          ${escapeHtml(className)}
+        </div>
+        ${rowsHTML}
       </div>`;
   }).join('');
 }
