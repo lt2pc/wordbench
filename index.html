@@ -241,7 +241,7 @@
     align-items:flex-start;
     gap:0;
   }
-  .app-columns main{ margin:0; flex-shrink:1; min-width:0; }
+  .app-columns main{ margin:0; flex-shrink:0; width:1000px; max-width:calc(100vw - 48px); }
 
   /* ---------- CLASSROOM CROWS-NEST (teacher-only sidebar) ---------- */
   .crows-nest{
@@ -2899,6 +2899,15 @@ function renderFlash(section){
 
   if(isTeacherMode()){
     renderTeacherFlashPreview(section);
+    return;
+  }
+
+  if(!currentStudent){
+    // Runs before any student has logged in yet (e.g. the very first render
+    // right after decks load, before the mode-gate has been resolved). There's
+    // no one to attribute SM-2 progress to, so just wait for a real login.
+    area.innerHTML = `<div class="empty-state"><div class="big-label">Pick a student profile to begin</div>Choose your name from the student lobby to start reviewing.</div>`;
+    document.getElementById(section+'-progress').textContent = 'waiting for login';
     return;
   }
 
