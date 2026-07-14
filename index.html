@@ -417,16 +417,16 @@
     gap:14px;
   }
   .flip-card{
-    width:100%;
-    max-width:clamp(480px, 40vw, 680px);
+    width:clamp(420px, 34vw, 600px);
     height:clamp(320px, 28vw, 420px);
     perspective:1400px;
     cursor:pointer;
     transition: transform 0.25s ease;
   }
-  /* Student review view needs a narrower card to leave room for the rating column beside it */
-  .card-stage:has(.srs-rate-col, .srs-rate-col-placeholder) .flip-card{
-    max-width:clamp(420px, 34vw, 600px);
+  /* Teacher preview has no rating column beside it, so the card can use the
+     full width that was always intended for that view. */
+  .card-stage:not(:has(.srs-rate-col, .srs-rate-col-placeholder)) .flip-card{
+    width:clamp(480px, 40vw, 680px);
   }
   .flip-card:hover{ transform: translateY(-4px); }
   .flip-inner{
@@ -1456,7 +1456,7 @@
   @media (max-width:600px){
     .combo{ font-size:1.5rem; }
     .headword{ font-size:1.7rem; }
-    .flip-card{ height:340px; }
+    .flip-card{ height:340px; max-width:100%; }
     .field-row2{ grid-template-columns:1fr; }
     .modal{ padding:22px; }
   }
