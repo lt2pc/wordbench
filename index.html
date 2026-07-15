@@ -1020,38 +1020,6 @@
     position:relative;
     overflow:hidden;
   }
-  /* ---------- LOBBY MASCOT ---------- */
-  .mascot-wrap{
-    position:absolute;
-    left:0; top:0;
-    width:64px;
-    height:64px;
-    pointer-events:none;
-    z-index:5;
-    will-change: transform;
-  }
-  .mascot-wrap.mascot-roaming{ transition: none; }
-  .mascot-wrap.mascot-homing{ transition: transform 0.45s cubic-bezier(.34,1.56,.64,1); }
-  #mascot-svg{ overflow:visible; }
-  #mascot-body-group{ transform-origin: 50px 65px; transition: transform 0.15s ease; }
-  .mascot-wrap.mascot-roaming #mascot-body-group{ animation: mascotBob 1.1s ease-in-out infinite; }
-  .mascot-wrap.mascot-homing #mascot-body-group{ animation: mascotAlert 0.5s ease-in-out infinite; }
-  .mascot-blob{ transition: fill 0.3s ease; }
-  .mascot-cheek{ transition: fill 0.3s ease; }
-  .mascot-pupil{ transition: cx 0.2s ease, cy 0.15s ease; }
-
-  @keyframes mascotBob{
-    0%, 100%{ transform: rotate(0deg) scaleY(1); }
-    50%{ transform: rotate(0deg) scaleY(0.94); }
-  }
-  @keyframes mascotAlert{
-    0%, 100%{ transform: rotate(-4deg) scale(1.06); }
-    50%{ transform: rotate(4deg) scale(1.1); }
-  }
-  @media (max-width:680px){
-    .mascot-wrap{ display:none; } /* not enough room to roam in a narrow modal */
-    #student-lobby-modal{ padding-right:32px !important; }
-  }
   .modal::before{
     content:'';
     position:absolute;
@@ -1605,35 +1573,13 @@
 
 <!-- STUDENT LOBBY: pick who you are before entering -->
 <div class="modal-overlay" id="student-lobby" style="background:var(--paper); align-items:center;" onclick="if(event.target === this) closeStudentLobby()">
-  <div class="modal" style="max-width:600px; padding-right:150px;" id="student-lobby-modal">
+  <div class="modal" style="max-width:480px;">
     <div class="modal-head">
       <div class="modal-title">Who are you?</div>
       <button class="modal-close" onclick="closeStudentLobby()" aria-label="Close">&times;</button>
     </div>
     <div class="modal-sub" style="margin-bottom:20px;">pick your name to start studying</div>
-    <div id="student-lobby-list" onmouseleave="mascotGoIdle()"></div>
-
-    <!-- Wordbench mascot: a small pink "&"-shaped blob that bounces freely
-         around the modal like an old DVD-logo screensaver. When a student's
-         name is hovered, it breaks off its path, homes in beside that name,
-         and recolors to a color unique to that student. On hover-out it
-         resumes roaming, continuing from where it left off. Pure inline
-         SVG + JS physics, no external assets. -->
-    <div class="mascot-wrap mascot-roaming" id="mascot-wrap" aria-hidden="true">
-      <svg id="mascot-svg" viewBox="0 0 100 100" width="64" height="64">
-        <g id="mascot-body-group">
-          <ellipse class="mascot-blob" cx="50" cy="58" rx="34" ry="30" fill="#EC4899" />
-          <ellipse class="mascot-blob" cx="50" cy="30" rx="15" ry="13" fill="#EC4899" />
-          <circle cx="38" cy="55" r="9" fill="#fff"/>
-          <circle cx="62" cy="55" r="9" fill="#fff"/>
-          <circle class="mascot-pupil" id="mascot-pupil-l" cx="40" cy="56" r="4" fill="#1A1625"/>
-          <circle class="mascot-pupil" id="mascot-pupil-r" cx="64" cy="56" r="4" fill="#1A1625"/>
-          <path d="M 40 72 Q 50 80 60 72" stroke="#831843" stroke-width="3" fill="none" stroke-linecap="round" id="mascot-mouth"/>
-          <ellipse class="mascot-cheek" cx="24" cy="66" rx="6" ry="4" fill="#F9A8D4" opacity="0.7"/>
-          <ellipse class="mascot-cheek" cx="76" cy="66" rx="6" ry="4" fill="#F9A8D4" opacity="0.7"/>
-        </g>
-      </svg>
-    </div>
+    <div id="student-lobby-list"></div>
   </div>
 </div>
 
@@ -4875,125 +4821,9 @@ let currentStudent = null; // { id, name, className } — the student this brows
 function openStudentLobby(){
   renderStudentLobby();
   document.getElementById('student-lobby').classList.add('open');
-  requestAnimationFrame(mascotStart); // wait a frame so the modal has real layout dimensions to bounce within
 }
 function closeStudentLobby(){
   document.getElementById('student-lobby').classList.remove('open');
-  if(mascotState.rafId){ cancelAnimationFrame(mascotState.rafId); mascotState.rafId = null; }
-}
-
-/* ---------------- LOBBY MASCOT ----------------
-   A small pink "&"-shaped blob that bounces around the student-picker modal
-   like an old DVD-logo screensaver — constant velocity, bouncing off the
-   modal's edges. When a student's name is hovered, it breaks off its path,
-   eases over to sit beside that row, and recolors to a color unique to that
-   student (deterministic per student id, same student always gets the same
-   color). On hover-out it resumes free-roaming from wherever it left off,
-   continuing in the same direction it was already moving. */
-const MASCOT_COLORS = [
-  '#EC4899', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6',
-  '#EF4444', '#14B8A6', '#F472B6', '#6366F1', '#84CC16',
-];
-function mascotColorFor(studentId){
-  let hash = 0;
-  for(let i=0;i<studentId.length;i++){ hash = (hash*31 + studentId.charCodeAt(i)) | 0; }
-  return MASCOT_COLORS[Math.abs(hash) % MASCOT_COLORS.length];
-}
-
-const mascotState = {
-  x: 20, y: 20,       // top-left position within the modal
-  vx: 1.6, vy: 1.3,   // pixels per frame
-  hovering: false,
-  rafId: null,
-};
-
-function mascotSetColor(hex){
-  document.querySelectorAll('#mascot-svg .mascot-blob').forEach(el => el.setAttribute('fill', hex));
-  document.querySelectorAll('#mascot-svg .mascot-cheek').forEach(el => el.setAttribute('fill', hex));
-}
-
-function mascotStep(){
-  const wrap = document.getElementById('mascot-wrap');
-  const modal = document.getElementById('student-lobby-modal');
-  if(!wrap || !modal){
-    mascotState.rafId = null;
-    return;
-  }
-
-  if(!mascotState.hovering){
-    const maxX = modal.clientWidth - wrap.offsetWidth;
-    const maxY = modal.clientHeight - wrap.offsetHeight;
-
-    mascotState.x += mascotState.vx;
-    mascotState.y += mascotState.vy;
-
-    // bounce off the edges, DVD-logo style
-    if(mascotState.x <= 0){ mascotState.x = 0; mascotState.vx = Math.abs(mascotState.vx); }
-    if(mascotState.x >= maxX){ mascotState.x = maxX; mascotState.vx = -Math.abs(mascotState.vx); }
-    if(mascotState.y <= 0){ mascotState.y = 0; mascotState.vy = Math.abs(mascotState.vy); }
-    if(mascotState.y >= maxY){ mascotState.y = maxY; mascotState.vy = -Math.abs(mascotState.vy); }
-
-    wrap.style.transform = `translate(${mascotState.x}px, ${mascotState.y}px)`;
-  }
-
-  mascotState.rafId = requestAnimationFrame(mascotStep);
-}
-
-function mascotStart(){
-  if(mascotState.rafId) return; // already running
-  const modal = document.getElementById('student-lobby-modal');
-  if(modal){
-    mascotState.x = Math.random() * Math.max(1, modal.clientWidth - 64);
-    mascotState.y = Math.random() * Math.max(1, modal.clientHeight - 64);
-  }
-  mascotState.rafId = requestAnimationFrame(mascotStep);
-}
-
-function mascotLookAt(buttonEl, studentId){
-  const wrap = document.getElementById('mascot-wrap');
-  const modal = document.getElementById('student-lobby-modal');
-  if(!wrap || !modal) return;
-
-  mascotState.hovering = true;
-  wrap.classList.remove('mascot-roaming');
-  wrap.classList.add('mascot-homing');
-
-  const modalRect = modal.getBoundingClientRect();
-  const btnRect = buttonEl.getBoundingClientRect();
-  const targetX = btnRect.right - modalRect.left + 12; // just to the right of the name
-  const targetY = (btnRect.top - modalRect.top) + (btnRect.height/2) - (wrap.offsetHeight/2);
-
-  // Clamp so it can't be dragged outside the modal on names near the edges
-  const maxX = modal.clientWidth - wrap.offsetWidth;
-  const maxY = modal.clientHeight - wrap.offsetHeight;
-  const clampedX = Math.min(Math.max(targetX, 0), Math.max(maxX,0));
-  const clampedY = Math.min(Math.max(targetY, 0), Math.max(maxY,0));
-
-  wrap.style.transform = `translate(${clampedX}px, ${clampedY}px)`;
-  mascotSetColor(mascotColorFor(studentId));
-
-  // eyes glance slightly toward the name it's beside
-  const pupilL = document.getElementById('mascot-pupil-l');
-  const pupilR = document.getElementById('mascot-pupil-r');
-  if(pupilL && pupilR){ pupilL.setAttribute('cx','36'); pupilR.setAttribute('cx','60'); }
-
-  // remember where it was so hover-out can resume from here
-  mascotState.x = clampedX;
-  mascotState.y = clampedY;
-}
-
-function mascotGoIdle(){
-  const wrap = document.getElementById('mascot-wrap');
-  if(!wrap) return;
-  mascotState.hovering = false;
-  wrap.classList.remove('mascot-homing');
-  wrap.classList.add('mascot-roaming');
-  mascotSetColor('#EC4899'); // back to its default brand-pink color while roaming
-  const pupilL = document.getElementById('mascot-pupil-l');
-  const pupilR = document.getElementById('mascot-pupil-r');
-  if(pupilL && pupilR){ pupilL.setAttribute('cx','40'); pupilR.setAttribute('cx','64'); }
-  // mascotStep picks up from mascotState.x/y and mascotState.vx/vy exactly as
-  // they were, so it continues in the same direction it was already heading.
 }
 
 function renderStudentLobby(){
@@ -5015,7 +4845,7 @@ function renderStudentLobby(){
   Object.keys(byClass).sort().forEach(className => {
     html += `<div class="roster-group-label">${escapeHtml(className)}</div>`;
     byClass[className].forEach(s => {
-      html += `<button class="student-pick-btn" onclick="pickStudent('${s.id}')" onmouseenter="mascotLookAt(this, '${s.id}')">${escapeHtml(s.name)}</button>`;
+      html += `<button class="student-pick-btn" onclick="pickStudent('${s.id}')">${escapeHtml(s.name)}</button>`;
     });
   });
   list.innerHTML = html;
