@@ -2628,10 +2628,53 @@ function blankCardState(){
   return { status:'new', repetitions:0, ease:2.5, interval:0, dueDate: null };
 }
 
+// A mastered card that's gone unreviewed for a long stretch past its due date
+// almost certainly isn't still "mastered" in reality — per the Ebbinghaus
+// forgetting curve, memory decays exponentially once review stops, and a
+// SM-2-derived interval is really an estimate of "how long before this is
+// likely forgotten," not a guarantee. Real SRS tools (Anki included) apply
+// exactly this kind of lapse-by-neglect rule.
+//
+// Threshold: overdue by 2x the card's own interval. This scales sensibly with
+// how well-established the memory was — a card just barely mastered with a
+// short 6-day interval decays faster than one reviewed successfully many
+// times with a 90-day interval, matching how a stronger memory trace fades
+// more slowly than a fresh one.
+const MASTERY_DECAY_MULTIPLIER = 2;
+// When a card decays from neglect, it does NOT resume its old (now-disproven)
+// long interval — that schedule was just shown to be wrong by the passage of
+// time. Instead it drops to a short relearning interval, same as a normal
+// in-session lapse, so the next review schedule is rebuilt from a
+// realistic, freshly-earned starting point rather than an inflated one.
+const DECAYED_RELEARN_INTERVAL = 1;
+
+// Applies passive decay to a stored card state without mutating storage —
+// this is a read-time projection, so status displayed anywhere (the review
+// queue, deck progress rings, Crow's Nest, the teacher dashboard) always
+// reflects reality, even before the student's next actual review "confirms"
+// the lapse and writes it back via srsReview.
+function applyMasteryDecay(cardState){
+  if(cardState.status !== 'mastered' || !cardState.dueDate) return cardState;
+
+  const daysOverdue = Math.floor((Date.now() - new Date(cardState.dueDate).getTime()) / 86400000);
+  const decayThreshold = Math.max(cardState.interval, 1) * MASTERY_DECAY_MULTIPLIER;
+
+  if(daysOverdue >= decayThreshold){
+    return {
+      ...cardState,
+      status: 'forgotten',
+      repetitions: 0,
+      interval: DECAYED_RELEARN_INTERVAL,
+      dueDate: cardState.dueDate, // keep the original due date as-is; it's already in the past, so it stays immediately due
+    };
+  }
+  return cardState;
+}
+
 function getCardState(studentId, section, deckId, wordId){
   const byStudent = studentProgress[studentId];
   const cs = byStudent && byStudent[section] && byStudent[section][deckId] && byStudent[section][deckId][wordId];
-  return cs ? cs : blankCardState();
+  return applyMasteryDecay(cs ? cs : blankCardState());
 }
 
 function setCardState(studentId, section, deckId, wordId, cardState){
@@ -2920,8 +2963,8 @@ function dataFor(section){
 
 /* ---------------- STUDY STATE ---------------- */
 const state = {
-  pv: { mode:'flash', srsQueue:[], srsPos:0, srsFlipped:false, srsSessionStats:null, teacherFlashIndex:0, teacherFlashOrder:[], quizIndex:0, quizOrder:[], score:0, answered:false },
-  vc: { mode:'flash', srsQueue:[], srsPos:0, srsFlipped:false, srsSessionStats:null, teacherFlashIndex:0, teacherFlashOrder:[], quizIndex:0, quizOrder:[], score:0, answered:false },
+  pv: { mode:'flash', srsQueue:[], srsPos:0, srsFlipped:false, srsSessionStats:null, srsPracticeMode:false, teacherFlashIndex:0, teacherFlashOrder:[], quizIndex:0, quizOrder:[], score:0, answered:false },
+  vc: { mode:'flash', srsQueue:[], srsPos:0, srsFlipped:false, srsSessionStats:null, srsPracticeMode:false, teacherFlashIndex:0, teacherFlashOrder:[], quizIndex:0, quizOrder:[], score:0, answered:false },
 };
 
 function resetStudyState(section){
@@ -2929,6 +2972,7 @@ function resetStudyState(section){
   state[section].srsPos = 0;
   state[section].srsFlipped = false;
   state[section].srsSessionStats = null;
+  state[section].srsPracticeMode = false;
   state[section].teacherFlashIndex = 0;
   state[section].teacherFlashOrder = [];
   state[section].quizIndex = 0;
@@ -3272,25 +3316,43 @@ const SRS_SESSION_SIZE = 20;
 // already due for review, then new cards never seen yet, up to
 // SRS_SESSION_SIZE total. If there aren't enough due/new cards to fill a
 // session, cards not yet due are NOT added just to pad it out — a short
-// session (or "all caught up") is the correct, honest result.
+// session is the correct, honest result.
+//
+// If literally nothing is forgotten/due/new (every card is mastered and not
+// yet due), the session falls back to PRACTICE MODE on mastered cards instead
+// of coming back empty — flashcards are meant to be reviewed over and over,
+// not "finished" once every card has been seen. Practice-mode reviews still
+// go through the normal SM-2 rating flow and update real progress, they're
+// just an extra opportunity to reinforce before the next card is naturally
+// due, prioritized by whichever mastered cards are soonest to their own due
+// date (i.e. closest to being forgotten, most worth reinforcing first).
 function buildSrsQueue(section){
   const data = dataFor(section);
   const deckId = deckStore[section].selectedDeckId;
-  if(!currentStudent) return data.map(w => w.id); // teacher preview: show everything in order
+  if(!currentStudent) return { ids: data.map(w => w.id), practiceMode: false }; // teacher preview: show everything in order
 
   const forgotten = [];
   const dueReview = []; // learning/mastered cards whose dueDate has arrived
   const fresh = [];      // never studied
+  const masteredNotDue = []; // fallback pool for practice mode, kept with due-date for sorting
 
   data.forEach(w=>{
     const cs = getCardState(currentStudent.id, section, deckId, w.id);
     if(cs.status === 'new') fresh.push(w.id);
     else if(cs.status === 'forgotten') forgotten.push(w.id);
     else if(isCardDue(cs)) dueReview.push(w.id);
+    else if(cs.status === 'mastered') masteredNotDue.push({ id: w.id, dueDate: cs.dueDate });
   });
 
-  const ordered = shuffle(forgotten).concat(shuffle(dueReview)).concat(shuffle(fresh));
-  return ordered.slice(0, SRS_SESSION_SIZE);
+  const primary = shuffle(forgotten).concat(shuffle(dueReview)).concat(shuffle(fresh));
+  if(primary.length > 0) return { ids: primary.slice(0, SRS_SESSION_SIZE), practiceMode: false };
+
+  if(masteredNotDue.length === 0) return { ids: [], practiceMode: false }; // deck genuinely has nothing at all yet (e.g. empty deck)
+
+  // Practice mode: soonest-due-first, so reinforcement focuses on the cards
+  // whose mastery is closest to being tested by time rather than a random mix.
+  masteredNotDue.sort((a,b) => (a.dueDate || '').localeCompare(b.dueDate || ''));
+  return { ids: masteredNotDue.slice(0, SRS_SESSION_SIZE).map(m => m.id), practiceMode: true };
 }
 
 // Plain flip-through-the-deck browser for teachers — the original flashcard
@@ -3411,7 +3473,9 @@ function renderFlash(section){
   }
 
   if(state[section].srsQueue.length === 0){
-    state[section].srsQueue = buildSrsQueue(section);
+    const built = buildSrsQueue(section);
+    state[section].srsQueue = built.ids;
+    state[section].srsPracticeMode = built.practiceMode;
     state[section].srsPos = 0;
     state[section].srsSessionStats = null;
   }
@@ -3435,8 +3499,9 @@ function renderFlash(section){
   const deckId = deckStore[section].selectedDeckId;
   const cardState = getCardState(currentStudent.id, section, deckId, item.id);
 
-  document.getElementById(section+'-progress').textContent =
-    `card ${state[section].srsPos+1} of ${queue.length}`;
+  document.getElementById(section+'-progress').textContent = state[section].srsPracticeMode
+    ? `practice card ${state[section].srsPos+1} of ${queue.length} · bonus review`
+    : `card ${state[section].srsPos+1} of ${queue.length}`;
 
   let frontHTML, backHTML;
   if(section==='pv'){
@@ -3538,32 +3603,40 @@ function renderSrsSessionDone(section){
   document.getElementById(section+'-progress').textContent = 'session complete';
 
   if(!stats){
-    // queue was empty from the start — nothing was due
+    // queue was empty from the start — this is now only reachable if the
+    // deck has genuinely no cards with any progress at all yet.
     area.innerHTML = `
       <div class="empty-state">
-        <div class="big-label">All caught up!</div>
-        No cards are due for review right now. Check back later, or come back after your teacher adds new words.
+        <div class="big-label">Nothing to review yet</div>
+        This deck doesn't have anything to study right now. Check back after your teacher adds some words.
       </div>`;
     return;
   }
 
+  const heading = state[section].srsPracticeMode ? 'Nice bonus round!' : 'Nice work!';
+  const subline = state[section].srsPracticeMode
+    ? `You practiced ${stats.reviewed} already-mastered card${stats.reviewed===1?'':'s'} — great way to keep them fresh.`
+    : `You reviewed ${stats.reviewed} card${stats.reviewed===1?'':'s'} this session.`;
+
   area.innerHTML = `
     <div class="empty-state">
-      <div class="big-label">Nice work!</div>
-      You reviewed ${stats.reviewed} card${stats.reviewed===1?'':'s'} this session.
+      <div class="big-label">${heading}</div>
+      ${subline}
       <div class="srs-done-summary">
         <span class="srs-status-badge srs-status-mastered">${stats.newlyMastered} newly mastered</span>
         <span class="srs-status-badge srs-status-learning">${stats.good + stats.easy} recalled well</span>
         <span class="srs-status-badge srs-status-forgotten">${stats.again} forgotten</span>
       </div>
       <div class="modal-actions" style="justify-content:center; margin-top:20px;">
-        <button class="ctrl-btn primary" onclick="restartSrsSession('${section}')">Review more cards</button>
+        <button class="ctrl-btn primary" onclick="restartSrsSession('${section}')">Keep reviewing</button>
       </div>
     </div>`;
 }
 
 function restartSrsSession(section){
-  state[section].srsQueue = buildSrsQueue(section);
+  const built = buildSrsQueue(section);
+  state[section].srsQueue = built.ids;
+  state[section].srsPracticeMode = built.practiceMode;
   state[section].srsPos = 0;
   state[section].srsFlipped = false;
   state[section].srsSessionStats = null;
