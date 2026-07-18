@@ -3368,19 +3368,16 @@ function buildSrsQueue(section){
   // > due-mastered (lower urgency check-ins) > brand new cards. Within
   // forgotten/learning specifically, hardest (lowest ease) goes first.
   //
-  // Due-mastered cards are also capped to a MINORITY share of the session
-  // whenever forgotten/learning cards need attention — otherwise, since
-  // mastered cards can come due in large coincidental batches, they'd crowd
-  // out actual learning time by sheer volume even while technically sitting
-  // "after" learning cards in the order. Reviewing something already secure
-  // is lower value than reviewing something still being learned, so it
-  // shouldn't be allowed to dominate a session just because more of them
-  // happened to become due on the same day.
+  // Due-mastered cards only fill whatever session space is LEFT OVER after
+  // every forgotten/learning card that needs attention is already included —
+  // never a fixed side-allocation. As long as there are still learning cards
+  // to work on, the session stays dedicated to them; mastered check-ins only
+  // show up to fill genuine spare room, so a student down to just a handful
+  // of learning cards isn't diluted by a coincidentally large batch of
+  // mastered cards becoming due on the same day.
   const needsWork = sortHardestFirst(forgotten).concat(sortHardestFirst(dueLearning));
-  const masteredCap = needsWork.length > 0
-    ? Math.max(2, Math.ceil(SRS_SESSION_SIZE * 0.25)) // still get a handful of check-ins, just not a flood
-    : SRS_SESSION_SIZE; // nothing urgent at all? mastered check-ins can fill the whole session
-  const cappedMastered = shuffle(dueMastered).slice(0, masteredCap);
+  const leftoverSpace = Math.max(0, SRS_SESSION_SIZE - needsWork.length);
+  const cappedMastered = shuffle(dueMastered).slice(0, leftoverSpace);
 
   const primary = needsWork.concat(cappedMastered).concat(shuffle(fresh));
   if(primary.length > 0) return { ids: primary.slice(0, SRS_SESSION_SIZE), practiceMode: false };
