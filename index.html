@@ -2963,8 +2963,8 @@ function dataFor(section){
 
 /* ---------------- STUDY STATE ---------------- */
 const state = {
-  pv: { mode:'flash', srsQueue:[], srsPos:0, srsFlipped:false, srsSessionStats:null, srsPracticeMode:false, teacherFlashIndex:0, teacherFlashOrder:[], quizIndex:0, quizOrder:[], score:0, answered:false },
-  vc: { mode:'flash', srsQueue:[], srsPos:0, srsFlipped:false, srsSessionStats:null, srsPracticeMode:false, teacherFlashIndex:0, teacherFlashOrder:[], quizIndex:0, quizOrder:[], score:0, answered:false },
+  pv: { mode:'flash', srsQueue:[], srsPos:0, srsFlipped:false, srsSessionStats:null, srsPracticeMode:false, srsPracticePoolSize:0, teacherFlashIndex:0, teacherFlashOrder:[], quizIndex:0, quizOrder:[], score:0, answered:false },
+  vc: { mode:'flash', srsQueue:[], srsPos:0, srsFlipped:false, srsSessionStats:null, srsPracticeMode:false, srsPracticePoolSize:0, teacherFlashIndex:0, teacherFlashOrder:[], quizIndex:0, quizOrder:[], score:0, answered:false },
 };
 
 function resetStudyState(section){
@@ -2973,6 +2973,7 @@ function resetStudyState(section){
   state[section].srsFlipped = false;
   state[section].srsSessionStats = null;
   state[section].srsPracticeMode = false;
+  state[section].srsPracticePoolSize = 0;
   state[section].teacherFlashIndex = 0;
   state[section].teacherFlashOrder = [];
   state[section].quizIndex = 0;
@@ -3331,28 +3332,44 @@ function buildSrsQueue(section){
   const deckId = deckStore[section].selectedDeckId;
   if(!currentStudent) return { ids: data.map(w => w.id), practiceMode: false }; // teacher preview: show everything in order
 
-  const forgotten = [];
-  const dueReview = []; // learning/mastered cards whose dueDate has arrived
-  const fresh = [];      // never studied
-  const masteredNotDue = []; // fallback pool for practice mode, kept with due-date for sorting
+  const forgotten = [];       // most urgent: had progress, then lapsed
+  const dueLearning = [];     // still being worked on (e.g. rated Hard), and due again
+  const dueMastered = [];     // already secure, but due for a check-in review
+  const fresh = [];           // never studied
+  const masteredNotDue = [];  // fallback pool for practice mode, kept with due-date for sorting
 
   data.forEach(w=>{
     const cs = getCardState(currentStudent.id, section, deckId, w.id);
     if(cs.status === 'new') fresh.push(w.id);
     else if(cs.status === 'forgotten') forgotten.push(w.id);
-    else if(isCardDue(cs)) dueReview.push(w.id);
-    else if(cs.status === 'mastered') masteredNotDue.push({ id: w.id, dueDate: cs.dueDate });
+    else if(cs.status === 'learning'){
+      if(isCardDue(cs)) dueLearning.push(w.id);
+      // not yet due: correctly excluded from this session, same as a not-yet-due mastered card
+    }
+    else if(cs.status === 'mastered'){
+      if(isCardDue(cs)) dueMastered.push(w.id);
+      else masteredNotDue.push({ id: w.id, dueDate: cs.dueDate });
+    }
   });
 
-  const primary = shuffle(forgotten).concat(shuffle(dueReview)).concat(shuffle(fresh));
+  // Priority order: forgotten (most urgent) > learning (still being worked on,
+  // exactly the "hard" group that should come before anything already secure)
+  // > due-mastered (lower urgency check-ins) > brand new cards.
+  const primary = shuffle(forgotten).concat(shuffle(dueLearning)).concat(shuffle(dueMastered)).concat(shuffle(fresh));
   if(primary.length > 0) return { ids: primary.slice(0, SRS_SESSION_SIZE), practiceMode: false };
 
   if(masteredNotDue.length === 0) return { ids: [], practiceMode: false }; // deck genuinely has nothing at all yet (e.g. empty deck)
 
-  // Practice mode: soonest-due-first, so reinforcement focuses on the cards
-  // whose mastery is closest to being tested by time rather than a random mix.
-  masteredNotDue.sort((a,b) => (a.dueDate || '').localeCompare(b.dueDate || ''));
-  return { ids: masteredNotDue.slice(0, SRS_SESSION_SIZE).map(m => m.id), practiceMode: true };
+  // Practice mode: fresh shuffle every time (not a fixed soonest-due sort),
+  // so repeated "Keep reviewing" clicks on a small mastered pool produce a
+  // genuinely varied order instead of the exact same queue each time — which
+  // is what made the app feel stuck/frozen when a deck only had a couple of
+  // mastered cards to practice.
+  return {
+    ids: shuffle(masteredNotDue.map(m => m.id)).slice(0, SRS_SESSION_SIZE),
+    practiceMode: true,
+    practicePoolSize: masteredNotDue.length,
+  };
 }
 
 // Plain flip-through-the-deck browser for teachers — the original flashcard
@@ -3476,6 +3493,7 @@ function renderFlash(section){
     const built = buildSrsQueue(section);
     state[section].srsQueue = built.ids;
     state[section].srsPracticeMode = built.practiceMode;
+    state[section].srsPracticePoolSize = built.practicePoolSize || 0;
     state[section].srsPos = 0;
     state[section].srsSessionStats = null;
   }
@@ -3617,11 +3635,15 @@ function renderSrsSessionDone(section){
   const subline = state[section].srsPracticeMode
     ? `You practiced ${stats.reviewed} already-mastered card${stats.reviewed===1?'':'s'} — great way to keep them fresh.`
     : `You reviewed ${stats.reviewed} card${stats.reviewed===1?'':'s'} this session.`;
+  const smallPoolNoteHTML = (state[section].srsPracticeMode && state[section].srsPracticePoolSize <= 2)
+    ? `<div style="margin-top:10px; font-size:0.85rem; color:var(--ink-soft);">Only ${state[section].srsPracticePoolSize} mastered card${state[section].srsPracticePoolSize===1?'':'s'} available to practice right now — the rest will join in as more cards get mastered.</div>`
+    : '';
 
   area.innerHTML = `
     <div class="empty-state">
       <div class="big-label">${heading}</div>
       ${subline}
+      ${smallPoolNoteHTML}
       <div class="srs-done-summary">
         <span class="srs-status-badge srs-status-mastered">${stats.newlyMastered} newly mastered</span>
         <span class="srs-status-badge srs-status-learning">${stats.good + stats.easy} recalled well</span>
@@ -3637,6 +3659,7 @@ function restartSrsSession(section){
   const built = buildSrsQueue(section);
   state[section].srsQueue = built.ids;
   state[section].srsPracticeMode = built.practiceMode;
+  state[section].srsPracticePoolSize = built.practicePoolSize || 0;
   state[section].srsPos = 0;
   state[section].srsFlipped = false;
   state[section].srsSessionStats = null;
