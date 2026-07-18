@@ -974,6 +974,112 @@
   }
 
   /* ---------- TEACHER PANEL (MODAL) ---------- */
+  /* ---------- LANDING GATE (redesign) ----------
+     Scoped entirely to #mode-gate so no other modal in the app (teacher panel,
+     student lobby, etc.) is affected by this styling. */
+  #mode-gate{
+    background: radial-gradient(ellipse 80% 60% at 20% 15%, rgba(244,114,182,0.35), transparent 60%),
+                radial-gradient(ellipse 70% 50% at 85% 20%, rgba(139,92,246,0.28), transparent 60%),
+                radial-gradient(ellipse 90% 70% at 50% 100%, rgba(52,211,153,0.22), transparent 60%),
+                var(--paper);
+    background-size: 200% 200%;
+    animation: gateGradientDrift 18s ease-in-out infinite;
+    overflow:hidden;
+  }
+  @keyframes gateGradientDrift{
+    0%, 100%{ background-position: 0% 0%, 100% 0%, 50% 100%; }
+    50%{ background-position: 20% 10%, 80% 20%, 40% 90%; }
+  }
+  .gate-blob{
+    position:absolute;
+    border-radius:50%;
+    filter: blur(50px);
+    opacity:0.5;
+    pointer-events:none;
+    z-index:0;
+  }
+  .gate-blob-1{ width:280px; height:280px; background:var(--brand-accent); top:-60px; left:-60px; animation: gateFloat1 12s ease-in-out infinite; }
+  .gate-blob-2{ width:220px; height:220px; background:#8B5CF6; bottom:-40px; right:-40px; animation: gateFloat2 14s ease-in-out infinite; }
+  .gate-blob-3{ width:180px; height:180px; background:#34D399; top:40%; right:5%; animation: gateFloat1 16s ease-in-out infinite reverse; opacity:0.35; }
+  @keyframes gateFloat1{
+    0%, 100%{ transform: translate(0,0) scale(1); }
+    50%{ transform: translate(30px, 20px) scale(1.08); }
+  }
+  @keyframes gateFloat2{
+    0%, 100%{ transform: translate(0,0) scale(1); }
+    50%{ transform: translate(-25px, -15px) scale(1.06); }
+  }
+  .gate-doodle{
+    position:absolute;
+    pointer-events:none;
+    z-index:1;
+    opacity:0.8;
+  }
+  .gate-doodle-spin{ animation: gateDoodleSpin 10s linear infinite; }
+  .gate-doodle-bob{ animation: gateFloat1 5s ease-in-out infinite; }
+  @keyframes gateDoodleSpin{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
+
+  #mode-gate .modal{
+    position:relative;
+    z-index:2;
+    animation: gateCardFloat 5s ease-in-out infinite, gateCardEnter 0.6s cubic-bezier(.34,1.56,.64,1);
+    box-shadow: 0 30px 80px rgba(190,24,93,0.25), 0 0 0 1px rgba(255,255,255,0.4) inset;
+  }
+  @keyframes gateCardFloat{
+    0%, 100%{ transform: translateY(0); }
+    50%{ transform: translateY(-8px); }
+  }
+  @keyframes gateCardEnter{
+    from{ opacity:0; transform: translateY(24px) scale(0.94); }
+    to{ opacity:1; transform: translateY(0) scale(1); }
+  }
+  .gate-hero-line{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:1.05rem;
+    color:var(--ink);
+    margin-top:2px;
+    margin-bottom:22px;
+    line-height:1.35;
+  }
+  .gate-role-btn{
+    position:relative;
+    padding:18px 20px;
+    font-size:1.02rem;
+    font-weight:700;
+    border-radius:18px;
+    transition: transform 0.18s cubic-bezier(.34,1.56,.64,1), box-shadow 0.18s ease, filter 0.18s ease;
+    cursor:pointer;
+  }
+  .gate-role-btn:hover{ transform: translateY(-3px) scale(1.015); filter:brightness(1.04); }
+  .gate-role-btn:active{ transform: translateY(0) scale(0.98); }
+  .gate-role-student{
+    background:var(--paper);
+    border:2px solid var(--brand-accent);
+    color:var(--ink);
+    box-shadow: 0 4px 16px rgba(244,114,182,0.18);
+  }
+  .gate-role-student:hover{ box-shadow: 0 10px 28px rgba(244,114,182,0.32); }
+  .gate-role-teacher{
+    background:linear-gradient(135deg, var(--brand-primary), #8B5CF6);
+    border:2px solid transparent;
+    color:#fff;
+    box-shadow: 0 8px 24px rgba(139,92,246,0.4);
+  }
+  .gate-role-teacher:hover{ box-shadow: 0 14px 36px rgba(139,92,246,0.5); }
+  .gate-role-sub{
+    display:block;
+    font-family:'JetBrains Mono', monospace;
+    font-weight:500;
+    font-size:0.72rem;
+    opacity:0.75;
+    margin-top:2px;
+    letter-spacing:0.01em;
+  }
+  @media (prefers-reduced-motion: reduce){
+    #mode-gate, .gate-blob, .gate-doodle-spin, .gate-doodle-bob, #mode-gate .modal{ animation:none !important; }
+  }
+
   .modal-overlay{
     position:fixed; inset:0;
     background:rgba(8,5,14,0.72);
@@ -1552,13 +1658,37 @@
 
 
 <!-- MODE GATE: shown before anything else -->
-<div class="modal-overlay open" id="mode-gate" style="background:var(--paper); align-items:center;">
+<div class="modal-overlay open" id="mode-gate" style="align-items:center;">
+  <div class="gate-blob gate-blob-1"></div>
+  <div class="gate-blob gate-blob-2"></div>
+  <div class="gate-blob gate-blob-3"></div>
+
+  <svg class="gate-doodle gate-doodle-spin" style="top:12%; left:8%;" width="34" height="34" viewBox="0 0 24 24" fill="none">
+    <path d="M12 2 L14 9 L21 9 L15.5 13.5 L17.5 21 L12 16.5 L6.5 21 L8.5 13.5 L3 9 L10 9 Z" fill="#F472B6" opacity="0.8"/>
+  </svg>
+  <svg class="gate-doodle gate-doodle-bob" style="bottom:14%; left:12%;" width="28" height="28" viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="12" r="3" fill="#34D399"/>
+    <circle cx="12" cy="12" r="8" stroke="#34D399" stroke-width="1.5" fill="none" opacity="0.5"/>
+  </svg>
+  <svg class="gate-doodle gate-doodle-bob" style="top:18%; right:10%; animation-delay:1.2s;" width="30" height="30" viewBox="0 0 24 24" fill="none">
+    <path d="M4 12 Q 8 4, 12 12 T 20 12" stroke="#8B5CF6" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+  </svg>
+  <svg class="gate-doodle gate-doodle-spin" style="bottom:16%; right:9%; animation-duration:14s;" width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <path d="M12 2 L14 9 L21 9 L15.5 13.5 L17.5 21 L12 16.5 L6.5 21 L8.5 13.5 L3 9 L10 9 Z" fill="#EC4899" opacity="0.6"/>
+  </svg>
+
   <div class="modal" style="max-width:420px; text-align:center;">
     <div class="brand" style="margin-bottom:6px;">wordbench<span class="dot">.</span></div>
-    <div class="modal-sub" style="margin-bottom:28px;">who's using the site right now?</div>
-    <div style="display:flex; flex-direction:column; gap:12px;">
-      <button class="ctrl-btn primary" style="padding:16px; font-size:1rem;" onclick="openStudentLobby()">I'm a student</button>
-      <button class="ctrl-btn" style="padding:16px; font-size:1rem; background:linear-gradient(135deg, var(--brand-primary), var(--brand-accent)); border-color:var(--brand-primary-deep); color:#fff; box-shadow:0 6px 18px rgba(236,72,153,0.35);" onclick="showTeacherLogin()">I'm the teacher</button>
+    <div class="gate-hero-line">Flashcards, but make them actually fun.</div>
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <button class="gate-role-btn gate-role-student" onclick="openStudentLobby()">
+        I'm here to study
+        <span class="gate-role-sub">let's get those cards mastered</span>
+      </button>
+      <button class="gate-role-btn gate-role-teacher" onclick="showTeacherLogin()">
+        I'm the teacher
+        <span class="gate-role-sub">manage decks &amp; track the class</span>
+      </button>
     </div>
     <div id="teacher-login-box" style="display:none; margin-top:20px; text-align:left;">
       <div class="field-label">Teacher password</div>
