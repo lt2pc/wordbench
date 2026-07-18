@@ -1332,6 +1332,145 @@
     background: linear-gradient(135deg, rgba(236,72,153,0.1), rgba(244,114,182,0.08));
     transform:translateX(4px);
   }
+  /* ---------- STUDENT PICKER (redesign) ---------- */
+  .student-picker-card{
+    background:
+      repeating-linear-gradient(135deg, rgba(236,72,153,0.025) 0px, rgba(236,72,153,0.025) 2px, transparent 2px, transparent 14px),
+      var(--modal-surface);
+  }
+  .student-picker-list{
+    margin-top:16px;
+    max-height:min(520px, 60vh);
+    overflow-y:auto;
+    padding-right:4px;
+    scrollbar-width:thin;
+    scrollbar-color: var(--brand-accent) transparent;
+  }
+  .student-picker-list::-webkit-scrollbar{ width:8px; }
+  .student-picker-list::-webkit-scrollbar-track{ background:transparent; }
+  .student-picker-list::-webkit-scrollbar-thumb{ background:var(--brand-accent); border-radius:99px; opacity:0.6; }
+
+  .picker-class-label{
+    font-family:'JetBrains Mono', monospace;
+    font-weight:700;
+    font-size:0.72rem;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin:18px 0 8px;
+  }
+  .picker-class-label:first-child{ margin-top:4px; }
+
+  .student-tile{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    width:100%;
+    padding:12px 16px;
+    margin-bottom:8px;
+    border-radius:16px;
+    border:2px solid var(--line);
+    background:var(--paper);
+    cursor:pointer;
+    text-align:left;
+    transition: transform 0.18s cubic-bezier(.34,1.56,.64,1), box-shadow 0.18s ease, border-color 0.18s ease;
+    min-height:48px;
+    position:relative;
+  }
+  .student-tile:hover{
+    transform:translateY(-2px) scale(1.01);
+    box-shadow: 0 8px 20px rgba(236,72,153,0.18);
+    border-color: var(--brand-accent);
+  }
+  .student-tile:active{ transform:translateY(0) scale(0.99); }
+  .student-tile:focus-visible{
+    outline:none;
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px rgba(236,72,153,0.25);
+  }
+  .student-tile-avatar{
+    width:44px; height:44px;
+    border-radius:14px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.4rem;
+    flex-shrink:0;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.5);
+  }
+  .student-tile-name{
+    font-family:'Inter', sans-serif;
+    font-weight:700;
+    font-size:1rem;
+    color:var(--ink);
+  }
+
+  .picker-empty-state{
+    text-align:center;
+    padding:40px 20px;
+  }
+  .picker-empty-emoji{ font-size:2.6rem; margin-bottom:10px; }
+  .picker-empty-title{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:1.15rem;
+    margin-bottom:6px;
+  }
+  .picker-empty-sub{
+    font-family:'Inter', sans-serif;
+    font-size:0.9rem;
+    color:var(--ink-soft);
+  }
+
+  /* ---------- AVATAR EDITOR (in-app, post-login) ---------- */
+  .avatar-edit-trigger{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:28px; height:28px;
+    border-radius:9px;
+    font-size:1rem;
+    cursor:pointer;
+    border:1.5px solid var(--line);
+    background:var(--paper);
+    transition: transform 0.15s ease;
+    flex-shrink:0;
+  }
+  .avatar-edit-trigger:hover{ transform:scale(1.08); }
+  .avatar-picker-swatches{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin:8px 0 16px;
+  }
+  .avatar-swatch-color{
+    width:32px; height:32px;
+    border-radius:10px;
+    cursor:pointer;
+    border:2px solid transparent;
+    transition: transform 0.15s ease;
+  }
+  .avatar-swatch-color:hover{ transform:scale(1.12); }
+  .avatar-swatch-color.selected{ border-color:var(--ink); box-shadow:0 0 0 2px var(--paper); }
+  .avatar-swatch-emoji{
+    width:36px; height:36px;
+    border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.15rem;
+    cursor:pointer;
+    border:2px solid var(--line);
+    background:var(--paper);
+    transition: transform 0.15s ease;
+  }
+  .avatar-swatch-emoji:hover{ transform:scale(1.12); }
+  .avatar-swatch-emoji.selected{ border-color:var(--brand-primary); background:rgba(236,72,153,0.1); }
+  .avatar-preview-large{
+    width:64px; height:64px;
+    border-radius:20px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:2rem;
+    margin:0 auto 14px;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.5);
+  }
+
   .modal-head{
     display:flex;
     justify-content:space-between;
@@ -1702,24 +1841,44 @@
 </div>
 
 <!-- STUDENT LOBBY: pick who you are before entering -->
-<div class="modal-overlay" id="student-lobby" style="background:var(--paper); align-items:center;" onclick="if(event.target === this) closeStudentLobby()">
-  <div class="modal" style="max-width:480px;">
+<div class="modal-overlay" id="student-lobby" style="background:rgba(8,5,14,0.55); align-items:center;" onclick="if(event.target === this) closeStudentLobby()">
+  <div class="modal student-picker-card" style="max-width:600px;">
     <div class="modal-head">
-      <div class="modal-title">Who are you?</div>
+      <div>
+        <div class="modal-title">Who are you? 👋</div>
+        <div class="modal-sub" style="margin-top:4px;">Pick your name to start studying</div>
+      </div>
       <button class="modal-close" onclick="closeStudentLobby()" aria-label="Close">&times;</button>
     </div>
-    <div class="modal-sub" style="margin-bottom:20px;">pick your name to start studying</div>
-    <div id="student-lobby-list"></div>
+    <div id="student-lobby-list" class="student-picker-list"></div>
   </div>
 </div>
 
 <div id="app-shell" style="display:none;">
+<div class="modal-overlay" id="avatar-editor-modal" style="align-items:center;" onclick="if(event.target === this) closeAvatarEditor()">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-head">
+      <div class="modal-title">Your avatar</div>
+      <button class="modal-close" onclick="closeAvatarEditor()" aria-label="Close">&times;</button>
+    </div>
+    <div class="avatar-preview-large" id="avatar-editor-preview"></div>
+    <div class="field-label" style="margin-top:0; text-align:center;">Color</div>
+    <div class="avatar-picker-swatches" id="avatar-editor-colors" style="justify-content:center;"></div>
+    <div class="field-label" style="text-align:center;">Icon</div>
+    <div class="avatar-picker-swatches" id="avatar-editor-emoji" style="justify-content:center;"></div>
+    <div class="modal-actions" style="justify-content:center; margin-top:16px;">
+      <button class="ctrl-btn primary" onclick="saveAvatarChoice()">Save avatar</button>
+    </div>
+  </div>
+</div>
+
 <header class="top">
   <div>
     <div class="brand">wordbench<span class="dot">.</span></div>
     <div class="tagline">particles, words, and how they fit together</div>
   </div>
   <div style="display:flex; gap:10px; align-items:center;">
+    <button class="avatar-edit-trigger" id="avatar-edit-trigger" style="display:none;" onclick="openAvatarEditor()" title="Customize your avatar" aria-label="Customize your avatar"></button>
     <span class="deck-count" id="mode-indicator"></span>
     <button class="teacher-link" id="teacher-tools-btn" style="display:none;" onclick="openTeacherPanel()">Teacher tools</button>
     <button class="teacher-link" onclick="switchMode()">Switch view</button>
@@ -2080,7 +2239,42 @@ function loadLocalFallback(){
 const ROSTER_DOC_PATH = { collection: "wordbench", doc: "roster" };
 const ROSTER_LOCAL_FALLBACK_KEY = 'wordbench_roster_local_fallback_v1';
 
-let studentRoster = []; // array of { id, name, className }
+let studentRoster = []; // array of { id, name, className, avatar?: { color, emoji } }
+
+// Curated presets for student avatar customization — deliberately a fixed set
+// rather than a free color/emoji picker, so every avatar still looks cohesive
+// and on-brand no matter what a student picks.
+const AVATAR_COLORS = ['#EC4899','#F472B6','#8B5CF6','#3B82F6','#10B981','#F59E0B','#EF4444','#14B8A6','#6366F1','#84CC16'];
+const AVATAR_EMOJI = ['😺','🐼','🦊','🐸','🐧','🦁','🐯','🐨','🦄','🐙','🌟','🍀','🔥','⚡','🎯','🚀'];
+
+// Deterministic default avatar (color + emoji) hashed from the student's id,
+// so every student has a sensible-looking avatar the moment they're
+// registered — before they've ever customized anything themselves.
+function defaultAvatarFor(studentId){
+  let hash = 0;
+  for(let i=0;i<studentId.length;i++){ hash = (hash*31 + studentId.charCodeAt(i)) | 0; }
+  const h = Math.abs(hash);
+  return { color: AVATAR_COLORS[h % AVATAR_COLORS.length], emoji: AVATAR_EMOJI[(h>>3) % AVATAR_EMOJI.length] };
+}
+function avatarFor(student){
+  return (student && student.avatar) ? student.avatar : defaultAvatarFor(student ? student.id : '');
+}
+
+// Saves the roster from a student-initiated edit (their own avatar
+// customization). Unlike saveRoster() — which is gated to teacher mode since
+// only teachers manage the roster's students/classes — this intentionally has
+// no such gate, mirroring how student progress writes already work in this
+// app: there's no separate auth layer, so "whoever is in that session" is the
+// same trust model used everywhere else a student updates their own data.
+function saveRosterFromStudent(){
+  localStorage.setItem(ROSTER_LOCAL_FALLBACK_KEY, JSON.stringify(studentRoster));
+  if(firebaseReady && db){
+    const ref = db.collection(ROSTER_DOC_PATH.collection).doc(ROSTER_DOC_PATH.doc);
+    ref.set({ students: studentRoster }).catch((err)=>{
+      console.error('Failed to save avatar to cloud:', err);
+    });
+  }
+}
 let unsubscribeRosterSnapshot = null;
 
 function connectRosterToCloud(){
@@ -4961,7 +5155,12 @@ function renderStudentLobby(){
   if(!list) return;
 
   if(studentRoster.length === 0){
-    list.innerHTML = `<div class="roster-empty" style="text-align:center; padding:20px 0;">No students have been registered yet. Ask your teacher to add you under Teacher tools → Register a student.</div>`;
+    list.innerHTML = `
+      <div class="picker-empty-state">
+        <div class="picker-empty-emoji">🌱</div>
+        <div class="picker-empty-title">Looks like this class is fresh!</div>
+        <div class="picker-empty-sub">Ask your teacher to add you under Teacher tools → Register a student.</div>
+      </div>`;
     return;
   }
 
@@ -4973,12 +5172,90 @@ function renderStudentLobby(){
 
   let html = '';
   Object.keys(byClass).sort().forEach(className => {
-    html += `<div class="roster-group-label">${escapeHtml(className)}</div>`;
+    html += `<div class="picker-class-label">${escapeHtml(className)}</div>`;
     byClass[className].forEach(s => {
-      html += `<button class="student-pick-btn" onclick="pickStudent('${s.id}')">${escapeHtml(s.name)}</button>`;
+      const avatar = avatarFor(s);
+      html += `
+        <button class="student-tile" onclick="pickStudent('${s.id}')">
+          <span class="student-tile-avatar" style="background:${avatar.color};">${avatar.emoji}</span>
+          <span class="student-tile-name">${escapeHtml(s.name)}</span>
+        </button>`;
     });
   });
   list.innerHTML = html;
+}
+
+/* ---------------- AVATAR EDITOR (student self-customization) ----------------
+   Lets a logged-in student personalize their own avatar from curated color +
+   emoji presets (not a free picker, so everything still looks cohesive). Only
+   reachable from inside the app after logging in — not from the picker itself
+   — since the picker's job is just fast identification, not customization. */
+let avatarDraft = { color:'', emoji:'' };
+
+function openAvatarEditor(){
+  if(!currentStudent) return;
+  const current = avatarFor(currentStudent);
+  avatarDraft = { color: current.color, emoji: current.emoji };
+
+  const colorsEl = document.getElementById('avatar-editor-colors');
+  colorsEl.innerHTML = AVATAR_COLORS.map(c => `
+    <span class="avatar-swatch-color ${c===avatarDraft.color?'selected':''}" style="background:${c};" onclick="avatarPickColor('${c}')"></span>`).join('');
+
+  const emojiEl = document.getElementById('avatar-editor-emoji');
+  emojiEl.innerHTML = AVATAR_EMOJI.map(e => `
+    <span class="avatar-swatch-emoji ${e===avatarDraft.emoji?'selected':''}" onclick="avatarPickEmoji('${e}')">${e}</span>`).join('');
+
+  renderAvatarEditorPreview();
+  document.getElementById('avatar-editor-modal').classList.add('open');
+}
+
+function closeAvatarEditor(){
+  document.getElementById('avatar-editor-modal').classList.remove('open');
+}
+
+function avatarPickColor(color){
+  avatarDraft.color = color;
+  document.querySelectorAll('#avatar-editor-colors .avatar-swatch-color').forEach(el=>{
+    el.classList.toggle('selected', el.style.background === hexToRgbForCompare(color));
+  });
+  renderAvatarEditorPreview();
+}
+function avatarPickEmoji(emoji){
+  avatarDraft.emoji = emoji;
+  document.querySelectorAll('#avatar-editor-emoji .avatar-swatch-emoji').forEach(el=>{
+    el.classList.toggle('selected', el.textContent === emoji);
+  });
+  renderAvatarEditorPreview();
+}
+// Browsers normalize inline style.background to rgb(...), so comparing against
+// the original hex string directly would never match — convert for comparison.
+function hexToRgbForCompare(hex){
+  const bigint = parseInt(hex.replace('#',''), 16);
+  return `rgb(${(bigint>>16)&255}, ${(bigint>>8)&255}, ${bigint&255})`;
+}
+
+function renderAvatarEditorPreview(){
+  const preview = document.getElementById('avatar-editor-preview');
+  preview.style.background = avatarDraft.color;
+  preview.textContent = avatarDraft.emoji;
+}
+
+function saveAvatarChoice(){
+  if(!currentStudent) return;
+  const student = studentRoster.find(s => s.id === currentStudent.id);
+  if(!student) return;
+
+  student.avatar = { color: avatarDraft.color, emoji: avatarDraft.emoji };
+  currentStudent.avatar = student.avatar;
+  localStorage.setItem(CURRENT_STUDENT_KEY, JSON.stringify(currentStudent));
+  saveRosterFromStudent();
+
+  const avatarBtn = document.getElementById('avatar-edit-trigger');
+  avatarBtn.style.background = student.avatar.color;
+  avatarBtn.textContent = student.avatar.emoji;
+
+  closeAvatarEditor();
+  showToast('Avatar updated!', 2000);
 }
 
 function pickStudent(studentId){
@@ -5028,10 +5305,20 @@ function finishEnteringApp(){
   document.body.classList.toggle('compact-mode', !isTeacherMode());
   if(isTeacherMode()){
     document.getElementById('mode-indicator').textContent = 'Teacher view';
+    document.getElementById('avatar-edit-trigger').style.display = 'none';
   } else {
     document.getElementById('mode-indicator').textContent = currentStudent
       ? `${currentStudent.name} · ${currentStudent.className}`
       : 'Student view';
+    const avatarBtn = document.getElementById('avatar-edit-trigger');
+    if(currentStudent){
+      const avatar = avatarFor(currentStudent);
+      avatarBtn.style.display = 'inline-flex';
+      avatarBtn.style.background = avatar.color;
+      avatarBtn.textContent = avatar.emoji;
+    } else {
+      avatarBtn.style.display = 'none';
+    }
   }
   // currentMode/currentStudent just changed, which affects the deck progress
   // ring, the flashcard queue, and whether the custom-quiz tab shows the
