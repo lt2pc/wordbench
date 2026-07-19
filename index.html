@@ -3351,11 +3351,12 @@ function buildSrsQueue(section){
   const deckId = deckStore[section].selectedDeckId;
   if(!currentStudent) return { ids: data.map(w => w.id), practiceMode: false }; // teacher preview: show everything in order
 
-  const forgotten = [];       // most urgent: had progress, then lapsed
-  const dueLearning = [];     // still being worked on (e.g. rated Hard), and due again
-  const dueMastered = [];     // already secure, but due for a check-in review
-  const fresh = [];           // never studied
-  const notDuePool = [];      // any learning/mastered card not yet due — fallback pool for practice mode
+  const forgotten = [];          // most urgent: had progress, then lapsed
+  const dueLearning = [];        // still being worked on (e.g. rated Hard), and due again
+  const dueMastered = [];        // already secure, but due for a check-in review
+  const fresh = [];              // never studied
+  const notDueLearning = [];     // learning cards not yet due — still worth prioritizing in practice mode
+  const notDueMastered = [];     // mastered cards not yet due — lowest priority, practice-mode filler only
 
   data.forEach(w=>{
     const cs = getCardState(currentStudent.id, section, deckId, w.id);
@@ -3363,11 +3364,11 @@ function buildSrsQueue(section){
     else if(cs.status === 'forgotten') forgotten.push({ id: w.id, ease: cs.ease });
     else if(cs.status === 'learning'){
       if(isCardDue(cs)) dueLearning.push({ id: w.id, ease: cs.ease });
-      else notDuePool.push(w.id); // not due yet — still perfectly fine to practice voluntarily
+      else notDueLearning.push(w.id); // not due yet — still perfectly fine to practice voluntarily
     }
     else if(cs.status === 'mastered'){
       if(isCardDue(cs)) dueMastered.push(w.id);
-      else notDuePool.push(w.id);
+      else notDueMastered.push(w.id);
     }
   });
 
@@ -3383,46 +3384,51 @@ function buildSrsQueue(section){
       .map(c => c.id);
   }
 
-  const learningCap = Math.ceil(SRS_SESSION_SIZE * SESSION_LEARNING_RATIO); // e.g. 15 out of 20
-  const allNeedsWork = sortHardestFirst(forgotten).concat(sortHardestFirst(dueLearning));
-  // Cap how much learning-type work goes into THIS session (hardest first) —
-  // a large backlog rolls over into future sessions rather than being forced
-  // into one long sitting. The session's actual size then scales down to
-  // however much learning work is really there, instead of always being 20.
-  const sessionLearning = allNeedsWork.slice(0, learningCap);
-
-  // Mastered check-ins scale proportionally to however much learning work
-  // actually made it into this session — e.g. 5 learning cards -> roughly
-  // 5 / 0.75 * 0.25 ≈ 2 mastered cards, not a flat number and not "whatever
-  // leftover space in a fixed 20-card session happens to be."
-  const masteredTarget = sessionLearning.length > 0
-    ? Math.round((sessionLearning.length / SESSION_LEARNING_RATIO) * (1 - SESSION_LEARNING_RATIO))
-    : 0;
-  const cappedMastered = shuffle(dueMastered).slice(0, masteredTarget);
-
-  const primary = sessionLearning.concat(cappedMastered);
-  if(primary.length > 0){
-    // Only pad with new cards if there's real spare room left after the
-    // scaled learning+mastered mix — new cards never crowd out the ratio.
-    const remainingRoom = Math.max(0, SRS_SESSION_SIZE - primary.length);
-    return { ids: primary.concat(shuffle(fresh).slice(0, remainingRoom)), practiceMode: false };
+  // Builds a session from a learning pool and a mastered pool at the target
+  // ~75/25 ratio, scaling the TOTAL size down to match whatever learning work
+  // actually exists rather than always padding up to SRS_SESSION_SIZE.
+  function buildRatioSession(learningPool, masteredPool){
+    const learningCap = Math.ceil(SRS_SESSION_SIZE * SESSION_LEARNING_RATIO); // e.g. 15 out of 20
+    const sessionLearning = learningPool.slice(0, learningCap);
+    const masteredTarget = sessionLearning.length > 0
+      ? Math.round((sessionLearning.length / SESSION_LEARNING_RATIO) * (1 - SESSION_LEARNING_RATIO))
+      : 0;
+    const cappedMastered = shuffle(masteredPool).slice(0, masteredTarget);
+    return sessionLearning.concat(cappedMastered);
   }
 
-  // No forgotten/learning work at all — new cards alone can fill a normal session.
+  const dueSession = buildRatioSession(
+    sortHardestFirst(forgotten).concat(sortHardestFirst(dueLearning)),
+    dueMastered
+  );
+
+  if(dueSession.length > 0){
+    // Only pad with new cards if there's real spare room left after the
+    // scaled learning+mastered mix — new cards never crowd out the ratio.
+    const remainingRoom = Math.max(0, SRS_SESSION_SIZE - dueSession.length);
+    return { ids: dueSession.concat(shuffle(fresh).slice(0, remainingRoom)), practiceMode: false };
+  }
+
+  // No forgotten/learning work at all currently due — new cards alone can fill a normal session.
   if(fresh.length > 0) return { ids: shuffle(fresh).slice(0, SRS_SESSION_SIZE), practiceMode: false };
 
-  // Practice mode: fresh shuffle every time (not a fixed order), so repeated
-  // "Keep reviewing" clicks on a small pool produce a genuinely varied order
-  // instead of the exact same queue each time — which is what made the app
-  // feel stuck/frozen when there were only a couple of cards to practice.
-  // This pool includes ANY card not yet due (learning or mastered) — the
-  // whole point is that flashcards should always have something to review,
-  // even once every card has already been seen and none are strictly due yet.
-  return {
-    ids: shuffle(notDuePool).slice(0, SRS_SESSION_SIZE),
-    practiceMode: true,
-    practicePoolSize: notDuePool.length,
-  };
+  // Nothing due at all: fall back to PRACTICE MODE instead of coming back
+  // empty — flashcards are meant to be reviewed over and over, not "finished"
+  // once every card has been seen once. Crucially, this still prioritizes
+  // not-yet-due LEARNING cards over not-yet-due MASTERED cards using the same
+  // ~75/25 ratio — previously this fallback shuffled both together with no
+  // preference at all, which is what let a session end up mostly mastered
+  // cards even while a student still had learning cards left to work on.
+  const practiceSession = buildRatioSession(shuffle(notDueLearning), notDueMastered);
+  if(practiceSession.length > 0){
+    return {
+      ids: practiceSession,
+      practiceMode: true,
+      practicePoolSize: notDueLearning.length + notDueMastered.length,
+    };
+  }
+
+  return { ids: [], practiceMode: false }; // deck genuinely has nothing at all yet (e.g. empty deck)
 }
 
 // Plain flip-through-the-deck browser for teachers — the original flashcard
