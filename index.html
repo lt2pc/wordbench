@@ -3387,12 +3387,18 @@ function buildSrsQueue(section){
   // Builds a session from a learning pool and a mastered pool at the target
   // ~75/25 ratio, scaling the TOTAL size down to match whatever learning work
   // actually exists rather than always padding up to SRS_SESSION_SIZE.
+  // If there's NO learning work at all, the ratio doesn't apply — mastered
+  // cards are then free to fill a normal full-size session on their own, so
+  // a fully-mastered deck still reviews normally instead of coming back empty.
   function buildRatioSession(learningPool, masteredPool){
     const learningCap = Math.ceil(SRS_SESSION_SIZE * SESSION_LEARNING_RATIO); // e.g. 15 out of 20
     const sessionLearning = learningPool.slice(0, learningCap);
-    const masteredTarget = sessionLearning.length > 0
-      ? Math.round((sessionLearning.length / SESSION_LEARNING_RATIO) * (1 - SESSION_LEARNING_RATIO))
-      : 0;
+
+    if(sessionLearning.length === 0){
+      return shuffle(masteredPool).slice(0, SRS_SESSION_SIZE);
+    }
+
+    const masteredTarget = Math.round((sessionLearning.length / SESSION_LEARNING_RATIO) * (1 - SESSION_LEARNING_RATIO));
     const cappedMastered = shuffle(masteredPool).slice(0, masteredTarget);
     return sessionLearning.concat(cappedMastered);
   }
