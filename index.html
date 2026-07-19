@@ -3322,20 +3322,30 @@ function renderTeacherProgressTab(){
 // cards are prioritized so the most urgent things surface first.
 const SRS_SESSION_SIZE = 20;
 
+// Target mix once a session includes any mastered "side" cards: roughly 3/4
+// learning-type work (forgotten + due-learning) to 1/4 mastered check-ins.
+// This is a RATIO the session scales to, not a fixed split — a session with
+// only 5 learning cards should end up small overall (5 learning + ~2
+// mastered), not padded up to a full 20 with a flood of mastered filler.
+const SESSION_LEARNING_RATIO = 0.75;
+
 // Builds one review session for the current student: forgotten cards first
 // (most urgent — these were being learned and got lost), then other cards
-// already due for review, then new cards never seen yet, up to
-// SRS_SESSION_SIZE total. If there aren't enough due/new cards to fill a
-// session, cards not yet due are NOT added just to pad it out — a short
-// session is the correct, honest result.
+// already due for review, then new cards never seen yet.
 //
-// If literally nothing is forgotten/due/new (every remaining card is
-// learning or mastered but not yet due), the session falls back to PRACTICE
-// MODE instead of coming back empty — flashcards are meant to be reviewed
-// over and over, not "finished" once every card has been seen once.
-// Practice-mode reviews still go through the normal SM-2 rating flow and
-// update real progress; they're just an extra voluntary opportunity to
-// reinforce before a card is naturally due again.
+// The session SIZE itself scales to how much learning-type work actually
+// exists, up to SRS_SESSION_SIZE as a ceiling — not a floor. If there's a
+// large backlog, only a session's worth of the hardest cards are pulled in
+// and the rest naturally rolls over to the next session (so a big backlog
+// gets worked through over several manageable sittings, not one long one).
+// If there's only a little learning work, the whole session shrinks to match
+// it, with a small proportional slice of mastered check-ins alongside —
+// mastered cards are always a minority side part, never the bulk filler.
+//
+// If literally nothing is forgotten/due/learning (every remaining card is
+// mastered but not yet due, or a new card), the session falls back to
+// PRACTICE MODE instead of coming back empty — flashcards are meant to be
+// reviewed over and over, not "finished" once every card has been seen once.
 function buildSrsQueue(section){
   const data = dataFor(section);
   const deckId = deckStore[section].selectedDeckId;
@@ -3373,26 +3383,33 @@ function buildSrsQueue(section){
       .map(c => c.id);
   }
 
-  // Priority order: forgotten (most urgent) > learning (still being worked on,
-  // exactly the "hard" group that should come before anything already secure)
-  // > due-mastered (lower urgency check-ins) > brand new cards. Within
-  // forgotten/learning specifically, hardest (lowest ease) goes first.
-  //
-  // Due-mastered cards only fill whatever session space is LEFT OVER after
-  // every forgotten/learning card that needs attention is already included —
-  // never a fixed side-allocation. As long as there are still learning cards
-  // to work on, the session stays dedicated to them; mastered check-ins only
-  // show up to fill genuine spare room, so a student down to just a handful
-  // of learning cards isn't diluted by a coincidentally large batch of
-  // mastered cards becoming due on the same day.
-  const needsWork = sortHardestFirst(forgotten).concat(sortHardestFirst(dueLearning));
-  const leftoverSpace = Math.max(0, SRS_SESSION_SIZE - needsWork.length);
-  const cappedMastered = shuffle(dueMastered).slice(0, leftoverSpace);
+  const learningCap = Math.ceil(SRS_SESSION_SIZE * SESSION_LEARNING_RATIO); // e.g. 15 out of 20
+  const allNeedsWork = sortHardestFirst(forgotten).concat(sortHardestFirst(dueLearning));
+  // Cap how much learning-type work goes into THIS session (hardest first) —
+  // a large backlog rolls over into future sessions rather than being forced
+  // into one long sitting. The session's actual size then scales down to
+  // however much learning work is really there, instead of always being 20.
+  const sessionLearning = allNeedsWork.slice(0, learningCap);
 
-  const primary = needsWork.concat(cappedMastered).concat(shuffle(fresh));
-  if(primary.length > 0) return { ids: primary.slice(0, SRS_SESSION_SIZE), practiceMode: false };
+  // Mastered check-ins scale proportionally to however much learning work
+  // actually made it into this session — e.g. 5 learning cards -> roughly
+  // 5 / 0.75 * 0.25 ≈ 2 mastered cards, not a flat number and not "whatever
+  // leftover space in a fixed 20-card session happens to be."
+  const masteredTarget = sessionLearning.length > 0
+    ? Math.round((sessionLearning.length / SESSION_LEARNING_RATIO) * (1 - SESSION_LEARNING_RATIO))
+    : 0;
+  const cappedMastered = shuffle(dueMastered).slice(0, masteredTarget);
 
-  if(notDuePool.length === 0) return { ids: [], practiceMode: false }; // deck genuinely has nothing at all yet (e.g. empty deck)
+  const primary = sessionLearning.concat(cappedMastered);
+  if(primary.length > 0){
+    // Only pad with new cards if there's real spare room left after the
+    // scaled learning+mastered mix — new cards never crowd out the ratio.
+    const remainingRoom = Math.max(0, SRS_SESSION_SIZE - primary.length);
+    return { ids: primary.concat(shuffle(fresh).slice(0, remainingRoom)), practiceMode: false };
+  }
+
+  // No forgotten/learning work at all — new cards alone can fill a normal session.
+  if(fresh.length > 0) return { ids: shuffle(fresh).slice(0, SRS_SESSION_SIZE), practiceMode: false };
 
   // Practice mode: fresh shuffle every time (not a fixed order), so repeated
   // "Keep reviewing" clicks on a small pool produce a genuinely varied order
