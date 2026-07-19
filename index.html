@@ -251,16 +251,16 @@
   body.compact-mode .deck-progress-info .deck-progress-detail{ font-size:0.72rem; }
   body.compact-mode .deck-progress-breakdown{ margin-top:4px; gap:6px; }
   body.compact-mode .mode-row{ margin-bottom:12px; }
-  body.compact-mode .card-stage{ min-height:clamp(300px, 26vw, 380px); }
+  body.compact-mode .card-stage{ min-height:clamp(340px, 30vw, 440px); }
   body.compact-mode .flip-card{
-    height:clamp(300px, 26vw, 380px);
-    width:clamp(460px, 38vw, 640px);
+    height:clamp(340px, 30vw, 440px);
+    width:clamp(520px, 42vw, 720px);
   }
-  body.compact-mode .face{ padding:22px 26px; gap:2px; }
-  body.compact-mode .combo{ font-size:clamp(1.8rem, 2.1vw, 2.4rem); }
+  body.compact-mode .face{ padding:28px 32px; gap:4px; }
+  body.compact-mode .combo{ font-size:clamp(2.1rem, 2.6vw, 2.8rem); }
   body.compact-mode .card-stage-card-col{ gap:12px; }
-  body.compact-mode .back-meaning{ font-size:1.05rem; }
-  body.compact-mode .back-example{ font-size:0.9rem; }
+  body.compact-mode .back-meaning{ font-size:clamp(1.7rem, 2.2vw, 2.2rem); }
+  body.compact-mode .back-example{ font-size:1.05rem; }
   body.compact-mode .srs-rate-btn{ padding:12px 10px; }
   body.compact-mode header.top{ padding:14px 24px 10px; }
   body.compact-mode .brand{ font-size:1.4rem; }
@@ -334,7 +334,8 @@
     flex-shrink:0;
   }
   .crows-nest-row{
-    display:flex;
+    display:grid;
+    grid-template-columns: 20px minmax(60px, 26%) 1fr auto;
     align-items:center;
     gap:8px;
     padding:10px 10px;
@@ -347,7 +348,6 @@
     font-weight:700;
     font-size:0.72rem;
     color:var(--ink-soft);
-    flex:0 0 20px;
     text-align:center;
   }
   .crows-nest-rank.medal{
@@ -374,16 +374,17 @@
     white-space:nowrap;
     overflow:hidden;
     text-overflow:ellipsis;
-    flex:0 0 26%;
   }
   .crows-nest-bar-track{
-    flex:1 1 auto;
+    display:block;
+    width:100%;
     height:8px;
     border-radius:99px;
     background:var(--paper-dim);
     overflow:hidden;
   }
   .crows-nest-bar-fill{
+    display:block;
     height:100%;
     border-radius:99px;
     background:var(--success);
@@ -545,6 +546,15 @@
     background: linear-gradient(160deg, #DB2777 0%, #9D174D 45%, #500724 100%);
     color:#fff;
     box-shadow: 0 20px 50px rgba(80,7,36,0.55);
+  }
+  .card-status-badge{
+    position:absolute;
+    top:18px;
+    left:18px;
+  }
+  .card-status-badge-back{
+    background:rgba(255,255,255,0.22) !important;
+    color:#fff !important;
   }
 
   .combo{
@@ -3572,7 +3582,6 @@ function renderFlash(section){
     backHTML = `<div class="back-meaning">${escapeHtml(item.meaning)}</div><div class="back-example">"${escapeHtml(item.example)}"</div>`;
   }
 
-  const statusBadgeHTML = `<span class="srs-status-badge srs-status-${cardState.status}">${cardState.status}</span>`;
   const flippedClass = state[section].srsFlipped ? ' flipped' : '';
 
   const rateColHTML = !state[section].srsFlipped
@@ -3587,11 +3596,16 @@ function renderFlash(section){
 
   area.innerHTML = `
     <div class="card-stage-card-col">
-      <div style="margin-bottom:2px;">${statusBadgeHTML}</div>
       <div class="flip-card${flippedClass}" id="${section}-flipcard" onclick="flipSrsCard('${section}')" role="button" tabindex="0" aria-label="Flashcard, tap to flip">
         <div class="flip-inner">
-          <div class="face front">${frontHTML}</div>
-          <div class="face back">${backHTML}</div>
+          <div class="face front">
+            <span class="srs-status-badge srs-status-${cardState.status} card-status-badge">${cardState.status}</span>
+            ${frontHTML}
+          </div>
+          <div class="face back">
+            <span class="srs-status-badge srs-status-${cardState.status} card-status-badge card-status-badge-back">${cardState.status}</span>
+            ${backHTML}
+          </div>
         </div>
       </div>
     </div>
