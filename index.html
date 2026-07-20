@@ -3780,12 +3780,13 @@ function advanceSrsCard(section){
 }
 
 // Goes back to the previous card in the queue so the student can review it
-// again or pick a different rating. Shows the card flipped with its
-// previous rating highlighted (if any) so it's clear what they answered.
+// again or pick a different rating. Shows the front side first, same as any
+// other card, so the student can try to recall it before flipping — auto-
+// flipping straight to the meaning would skip that recall step entirely.
 function goToPreviousSrsCard(section){
   if(state[section].srsPos <= 0) return;
   state[section].srsPos--;
-  state[section].srsFlipped = true;
+  state[section].srsFlipped = false;
   renderFlash(section);
 }
 
