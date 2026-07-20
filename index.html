@@ -844,6 +844,24 @@
     flex-wrap:wrap;
     justify-content:center;
   }
+  .srs-nav-row{ margin-top:4px; }
+  .ctrl-btn:disabled{
+    opacity:0.4;
+    cursor:not-allowed;
+  }
+  .ctrl-btn:disabled:hover{ transform:none; background:var(--paper); color:var(--ink); }
+  .srs-rate-selected{
+    box-shadow: 0 0 0 3px rgba(236,72,153,0.35) inset;
+    font-weight:800;
+  }
+  .srs-rate-selected::after{
+    content:'✓ your answer';
+    display:block;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.6rem;
+    opacity:0.7;
+    margin-top:2px;
+  }
   .ctrl-btn{
     font-family:'Inter', sans-serif;
     font-weight:700;
@@ -2760,6 +2778,24 @@ function recordReview(section, wordId, rating){
   return null;
 }
 
+// Recomputes and overwrites a card's SM-2 state from an explicit prior
+// snapshot rather than whatever is currently stored. Used when a student
+// revisits an already-rated card in this session and picks a different
+// rating: instead of applying the new rating on top of the old result
+// (which would double-count the review), this recomputes fresh from the
+// state that existed right before the FIRST rating this session, so the
+// new rating is the only one that actually takes effect.
+function recordReviewWithBaseline(section, wordId, rating, baselineState){
+  if(isTeacherMode() || !currentStudent) return null;
+  const deck = activeDeck(section);
+  if(!deck) return null;
+  const deckId = deckStore[section].selectedDeckId;
+  const next = srsReview(baselineState, rating);
+  setCardState(currentStudent.id, section, deckId, wordId, next);
+  saveStudentProgress();
+  return next;
+}
+
 function recordReviewFromCorrectness(section, wordId, wasCorrect){
   return recordReview(section, wordId, wasCorrect ? 'good' : 'again');
 }
@@ -2973,8 +3009,8 @@ function dataFor(section){
 
 /* ---------------- STUDY STATE ---------------- */
 const state = {
-  pv: { mode:'flash', srsQueue:[], srsPos:0, srsFlipped:false, srsSessionStats:null, srsPracticeMode:false, srsPracticePoolSize:0, teacherFlashIndex:0, teacherFlashOrder:[], quizIndex:0, quizOrder:[], score:0, answered:false },
-  vc: { mode:'flash', srsQueue:[], srsPos:0, srsFlipped:false, srsSessionStats:null, srsPracticeMode:false, srsPracticePoolSize:0, teacherFlashIndex:0, teacherFlashOrder:[], quizIndex:0, quizOrder:[], score:0, answered:false },
+  pv: { mode:'flash', srsQueue:[], srsPos:0, srsFlipped:false, srsSessionStats:null, srsPracticeMode:false, srsPracticePoolSize:0, srsHistory:{}, teacherFlashIndex:0, teacherFlashOrder:[], quizIndex:0, quizOrder:[], score:0, answered:false },
+  vc: { mode:'flash', srsQueue:[], srsPos:0, srsFlipped:false, srsSessionStats:null, srsPracticeMode:false, srsPracticePoolSize:0, srsHistory:{}, teacherFlashIndex:0, teacherFlashOrder:[], quizIndex:0, quizOrder:[], score:0, answered:false },
 };
 
 function resetStudyState(section){
@@ -2984,6 +3020,7 @@ function resetStudyState(section){
   state[section].srsSessionStats = null;
   state[section].srsPracticeMode = false;
   state[section].srsPracticePoolSize = 0;
+  state[section].srsHistory = {};
   state[section].teacherFlashIndex = 0;
   state[section].teacherFlashOrder = [];
   state[section].quizIndex = 0;
@@ -3612,15 +3649,25 @@ function renderFlash(section){
   }
 
   const flippedClass = state[section].srsFlipped ? ' flipped' : '';
+  const existingRating = state[section].srsHistory[wordId] ? state[section].srsHistory[wordId].rating : null;
+  function ratingClass(r){ return existingRating === r ? ' srs-rate-selected' : ''; }
 
   const rateColHTML = !state[section].srsFlipped
     ? `<div class="srs-rate-col-placeholder"></div>`
     : `
     <div class="srs-rate-col">
-      <button class="srs-rate-btn srs-rate-easy" onclick="rateSrsCard('${section}','easy')">Easy<span class="srs-rate-sub">no effort</span></button>
-      <button class="srs-rate-btn srs-rate-good" onclick="rateSrsCard('${section}','good')">Good<span class="srs-rate-sub">got it</span></button>
-      <button class="srs-rate-btn srs-rate-hard" onclick="rateSrsCard('${section}','hard')">Hard<span class="srs-rate-sub">barely got it</span></button>
-      <button class="srs-rate-btn srs-rate-again" onclick="rateSrsCard('${section}','again')">Again<span class="srs-rate-sub">forgot it</span></button>
+      <button class="srs-rate-btn srs-rate-easy${ratingClass('easy')}" onclick="rateSrsCard('${section}','easy')">Easy<span class="srs-rate-sub">no effort</span></button>
+      <button class="srs-rate-btn srs-rate-good${ratingClass('good')}" onclick="rateSrsCard('${section}','good')">Good<span class="srs-rate-sub">got it</span></button>
+      <button class="srs-rate-btn srs-rate-hard${ratingClass('hard')}" onclick="rateSrsCard('${section}','hard')">Hard<span class="srs-rate-sub">barely got it</span></button>
+      <button class="srs-rate-btn srs-rate-again${ratingClass('again')}" onclick="rateSrsCard('${section}','again')">Again<span class="srs-rate-sub">forgot it</span></button>
+    </div>`;
+
+  const isFirstCard = state[section].srsPos <= 0;
+  const navRowHTML = `
+    <div class="card-controls srs-nav-row">
+      <button class="ctrl-btn" onclick="goToPreviousSrsCard('${section}')" ${isFirstCard ? 'disabled' : ''}>← Previous</button>
+      <button class="ctrl-btn" onclick="shuffleRemainingSrsCards('${section}')">Shuffle</button>
+      <button class="ctrl-btn" onclick="advanceSrsCard('${section}')">Next →</button>
     </div>`;
 
   area.innerHTML = `
@@ -3637,6 +3684,7 @@ function renderFlash(section){
           </div>
         </div>
       </div>
+      ${navRowHTML}
     </div>
     ${rateColHTML}
   `;
@@ -3652,9 +3700,10 @@ function flipSrsCard(section){
   renderFlash(section);
 }
 
-// Records the student's self-rating via SM-2, advances to the next card in the
-// queue, and moves on. This is the only place ratings are recorded, so a card's
-// mastery status only ever changes through a review the student actually did.
+// Records the student's self-rating via SM-2. If this card hasn't been rated
+// yet this session, its current state is snapshotted first so a later
+// re-rating (via Previous) can recompute cleanly from that same starting
+// point instead of stacking on top of whatever the first rating produced.
 function rateSrsCard(section, rating){
   const data = dataFor(section);
   const queue = state[section].srsQueue;
@@ -3662,26 +3711,95 @@ function rateSrsCard(section, rating){
   const item = data.find(w => w.id === wordId);
   if(!item) return;
 
-  const before = getCardState(currentStudent.id, section, deckStore[section].selectedDeckId, item.id).status;
-  const after = recordReview(section, item.id, rating);
+  const deckId = deckStore[section].selectedDeckId;
+  const history = state[section].srsHistory;
 
   if(!state[section].srsSessionStats){
     state[section].srsSessionStats = { reviewed:0, again:0, hard:0, good:0, easy:0, newlyMastered:0 };
   }
   const stats = state[section].srsSessionStats;
-  stats.reviewed++;
-  stats[rating]++;
-  if(after && after.status === 'mastered' && before !== 'mastered') stats.newlyMastered++;
 
-  state[section].srsPos++;
-  state[section].srsFlipped = false;
+  let baselineState, before, after, isReRating;
+  if(history[wordId]){
+    // Already rated this card earlier in this session — recompute fresh from
+    // the ORIGINAL pre-session snapshot, and undo the old rating's
+    // contribution to the session stats before counting the new one.
+    isReRating = true;
+    baselineState = history[wordId].stateBefore;
+    before = baselineState.status;
+    const oldRating = history[wordId].rating;
+    stats[oldRating]--;
+    if(history[wordId].wasNewlyMastered) stats.newlyMastered--;
+  } else {
+    isReRating = false;
+    baselineState = getCardState(currentStudent.id, section, deckId, item.id);
+    before = baselineState.status;
+    stats.reviewed++;
+  }
+
+  after = recordReviewWithBaseline(section, item.id, rating, baselineState);
+  const wasNewlyMastered = !!(after && after.status === 'mastered' && before !== 'mastered');
+
+  history[wordId] = { stateBefore: baselineState, rating, wasNewlyMastered };
+  stats[rating]++;
+  if(wasNewlyMastered) stats.newlyMastered++;
+
   renderDeckProgress(section);
 
+  if(isReRating){
+    // Re-rating a revisited card: stay put so the student can see the
+    // correction take effect, rather than auto-advancing away from the card
+    // they specifically navigated back to fix.
+    state[section].srsFlipped = true;
+    renderFlash(section);
+  } else {
+    // A normal, first-time rating still auto-advances to the next card, same as before.
+    state[section].srsPos++;
+    state[section].srsFlipped = false;
+    if(state[section].srsPos >= state[section].srsQueue.length){
+      renderSrsSessionDone(section);
+    } else {
+      renderFlash(section);
+    }
+  }
+}
+
+// Moves to the next card in the queue without changing any rating — a plain
+// navigation action, separate from rateSrsCard so rating and moving are
+// independent (letting a student rate, then go back and re-rate, then move
+// forward again in any order).
+function advanceSrsCard(section){
+  const queue = state[section].srsQueue;
+  state[section].srsPos++;
+  state[section].srsFlipped = false;
   if(state[section].srsPos >= queue.length){
     renderSrsSessionDone(section);
   } else {
     renderFlash(section);
   }
+}
+
+// Goes back to the previous card in the queue so the student can review it
+// again or pick a different rating. Shows the card flipped with its
+// previous rating highlighted (if any) so it's clear what they answered.
+function goToPreviousSrsCard(section){
+  if(state[section].srsPos <= 0) return;
+  state[section].srsPos--;
+  state[section].srsFlipped = true;
+  renderFlash(section);
+}
+
+// Re-shuffles the ENTIRE session's order — including already-seen cards, not
+// just the unseen remainder — so the student can genuinely mix things up
+// mid-session rather than only affecting what's still ahead. The student's
+// position number (e.g. "card 5 of 12") stays exactly where it was; only
+// which specific card occupies each position changes. Because Previous
+// re-rating works off each card's own stored history (see rateSrsCard),
+// re-encountering an already-rated card later at a new position still shows
+// its correct existing rating and can still be corrected normally.
+function shuffleRemainingSrsCards(section){
+  state[section].srsQueue = shuffle(state[section].srsQueue);
+  renderFlash(section);
 }
 
 function renderSrsSessionDone(section){
@@ -3732,6 +3850,7 @@ function restartSrsSession(section){
   state[section].srsPos = 0;
   state[section].srsFlipped = false;
   state[section].srsSessionStats = null;
+  state[section].srsHistory = {};
   renderFlash(section);
 }
 
