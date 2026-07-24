@@ -1911,6 +1911,7 @@
     <button class="teacher-link" id="teacher-tools-btn" style="display:none;" onclick="openTeacherPanel()">Teacher tools</button>
     <button class="teacher-link" onclick="switchMode()">Switch view</button>
     <button class="teacher-link" id="theme-toggle-btn" onclick="toggleTheme()">🌙 Dark mode</button>
+    <button class="teacher-link" id="sound-toggle-btn" onclick="toggleSound()">🔊 Sound on</button>
   </div>
 </header>
 <div id="sync-banner" class="deck-count" style="max-width:1000px; margin:0 auto; padding:0 24px 12px; opacity:0.7;"></div>
@@ -3740,6 +3741,10 @@ function rateSrsCard(section, rating){
   after = recordReviewWithBaseline(section, item.id, rating, baselineState);
   const wasNewlyMastered = !!(after && after.status === 'mastered' && before !== 'mastered');
 
+  if(wasNewlyMastered) playSound('mastered');
+  else if(rating === 'again') playSound('incorrect');
+  else playSound('correct');
+
   history[wordId] = { stateBefore: baselineState, rating, wasNewlyMastered };
   stats[rating]++;
   if(wasNewlyMastered) stats.newlyMastered++;
@@ -4197,6 +4202,7 @@ function answerQuiz(section, btnEl){
     else if(b === btnEl) b.classList.add('incorrect');
   });
   if(chosenCorrect) state[section].score++;
+  playSound(chosenCorrect ? 'correct' : 'incorrect');
   const wordId = btnEl.getAttribute('data-word-id');
   if(wordId) recordReviewFromCorrectness(section, wordId, chosenCorrect);
   renderDeckProgress(section);
@@ -4418,6 +4424,7 @@ function answerCustomQuiz(section, btnEl){
     else if(b === btnEl) b.classList.add('incorrect');
   });
   if(chosenCorrect) cs.score++;
+  playSound(chosenCorrect ? 'correct' : 'incorrect');
   document.getElementById(section+'-cq-next').style.display = 'inline-block';
 }
 
@@ -5616,6 +5623,78 @@ function finishEnteringApp(){
   setMode('vc', state.vc.mode);
 }
 
+/* ---------------- SOUND EFFECTS ----------------
+   Small, generated audio cues (via the Web Audio API — no external sound
+   files needed, so nothing to license or host) for correct/incorrect answers
+   and newly-mastered cards. Muted by default off (sound ON by default), with
+   a toggle that persists the same way dark mode does. Generating tones also
+   means this never needs network access or adds any file weight to the app. */
+const SOUND_MUTE_KEY = 'wordbench_sound_muted_v1';
+let soundMuted = false;
+let audioCtx = null;
+
+function getAudioCtx(){
+  if(audioCtx) return audioCtx;
+  try{
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }catch(e){
+    audioCtx = null; // some environments (very old browsers) may not support this at all
+  }
+  return audioCtx;
+}
+
+// Plays a single short tone. Volume fades out exponentially rather than
+// cutting off abruptly, so it sounds like a soft chime instead of a beep.
+function playTone(ctx, freq, startOffset, duration, peakGain, type){
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type || 'sine';
+  osc.frequency.value = freq;
+  const startTime = ctx.currentTime + startOffset;
+  gain.gain.setValueAtTime(peakGain, startTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(startTime);
+  osc.stop(startTime + duration);
+}
+
+// kind: 'correct' | 'incorrect' | 'mastered'
+function playSound(kind){
+  if(soundMuted) return;
+  const ctx = getAudioCtx();
+  if(!ctx) return;
+  if(ctx.state === 'suspended') ctx.resume(); // browsers suspend audio until a user gesture; rating a card counts as one
+
+  if(kind === 'correct'){
+    playTone(ctx, 523.25, 0,    0.11, 0.11); // C5
+    playTone(ctx, 783.99, 0.09, 0.20, 0.11); // G5 — a quick little "got it" lift
+  } else if(kind === 'incorrect'){
+    playTone(ctx, 220, 0, 0.24, 0.10, 'triangle'); // low, soft — informative, not punishing
+  } else if(kind === 'mastered'){
+    playTone(ctx, 523.25, 0,    0.10, 0.10); // C5
+    playTone(ctx, 659.25, 0.08, 0.10, 0.10); // E5
+    playTone(ctx, 783.99, 0.16, 0.26, 0.13); // G5 — a tiny 3-note fanfare
+  }
+}
+
+function updateSoundToggleButton(){
+  const btn = document.getElementById('sound-toggle-btn');
+  if(btn) btn.textContent = soundMuted ? '🔇 Sound off' : '🔊 Sound on';
+}
+
+function toggleSound(){
+  soundMuted = !soundMuted;
+  localStorage.setItem(SOUND_MUTE_KEY, soundMuted ? 'true' : 'false');
+  updateSoundToggleButton();
+  if(!soundMuted) playSound('correct'); // quick preview so turning it on is obviously audible
+}
+
+function initSound(){
+  soundMuted = localStorage.getItem(SOUND_MUTE_KEY) === 'true';
+  updateSoundToggleButton();
+}
+
 /* ---------------- DARK MODE ---------------- */
 const THEME_STORAGE_KEY = 'wordbench_theme_v1';
 
@@ -5646,6 +5725,7 @@ function initTheme(){
 
 /* ---------------- INIT ---------------- */
 initTheme();
+initSound();
 initFirebase();
 connectToCloud(function(){
   // initial render happens once data has loaded from the cloud (or fallback)
