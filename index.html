@@ -251,17 +251,19 @@
   body.compact-mode .deck-progress-info .deck-progress-detail{ font-size:0.72rem; }
   body.compact-mode .deck-progress-breakdown{ margin-top:4px; gap:6px; }
   body.compact-mode .mode-row{ margin-bottom:12px; }
-  body.compact-mode .card-stage{ min-height:clamp(340px, 30vw, 440px); }
+  body.compact-mode .card-stage{ min-height:clamp(340px, 28vw, 560px); }
   body.compact-mode .flip-card{
-    height:clamp(340px, 30vw, 440px);
-    width:clamp(520px, 42vw, 720px);
+    height:clamp(340px, 28vw, 560px);
+    width:clamp(520px, 40vw, 920px);
   }
   body.compact-mode .face{ padding:28px 32px; gap:4px; }
-  body.compact-mode .combo{ font-size:clamp(2.1rem, 2.6vw, 2.8rem); }
+  body.compact-mode .combo{ font-size:clamp(2.1rem, 2.4vw, 3.4rem); }
   body.compact-mode .card-stage-card-col{ gap:12px; }
-  body.compact-mode .back-meaning{ font-size:clamp(1.7rem, 2.2vw, 2.2rem); }
-  body.compact-mode .back-example{ font-size:1.05rem; }
-  body.compact-mode .srs-rate-btn{ padding:12px 10px; }
+  body.compact-mode .back-meaning{ font-size:clamp(1.7rem, 2vw, 2.6rem); }
+  body.compact-mode .back-example{ font-size:clamp(1.05rem, 1.1vw, 1.3rem); }
+  body.compact-mode .srs-rate-col{ width:180px; }
+  body.compact-mode .srs-rate-col-placeholder{ width:180px; }
+  body.compact-mode .srs-rate-btn{ padding:16px 12px; font-size:1rem; }
   body.compact-mode header.top{ padding:14px 24px 10px; }
   body.compact-mode .brand{ font-size:1.4rem; }
   body.compact-mode .tagline{ display:none; }
@@ -276,6 +278,16 @@
     gap:0;
   }
   .app-columns main{ margin:0; flex-shrink:0; width:1000px; max-width:calc(100vw - 48px); }
+  /* Scale main up on progressively larger screens so the whole app — including
+     the flashcard — actually uses the extra space on big monitors, instead of
+     staying capped at 1000px forever. Still a FIXED width at any given
+     breakpoint (not fluid/percentage-based), which is what keeps the earlier
+     anti-layout-shift fix intact: switching between Flashcards/Quiz/Custom
+     Quiz can't change main's own width and re-center the page, since that
+     width only depends on viewport size, never on which mode is showing. */
+  @media (min-width:1500px){ .app-columns main{ width:1180px; } }
+  @media (min-width:1800px){ .app-columns main{ width:1360px; } }
+  @media (min-width:2200px){ .app-columns main{ width:1560px; } }
 
   /* ---------- CLASSROOM CROWS-NEST (teacher-only sidebar) ---------- */
   .crows-nest{
@@ -3751,21 +3763,16 @@ function rateSrsCard(section, rating){
 
   renderDeckProgress(section);
 
-  if(isReRating){
-    // Re-rating a revisited card: stay put so the student can see the
-    // correction take effect, rather than auto-advancing away from the card
-    // they specifically navigated back to fix.
-    state[section].srsFlipped = true;
-    renderFlash(section);
+  if(isReRating) showToast('Answer updated ✓', 1400);
+
+  // Advance to the next card — re-rating now behaves exactly like a normal,
+  // first-time answer instead of staying put on the current card.
+  state[section].srsPos++;
+  state[section].srsFlipped = false;
+  if(state[section].srsPos >= state[section].srsQueue.length){
+    renderSrsSessionDone(section);
   } else {
-    // A normal, first-time rating still auto-advances to the next card, same as before.
-    state[section].srsPos++;
-    state[section].srsFlipped = false;
-    if(state[section].srsPos >= state[section].srsQueue.length){
-      renderSrsSessionDone(section);
-    } else {
-      renderFlash(section);
-    }
+    renderFlash(section);
   }
 }
 
