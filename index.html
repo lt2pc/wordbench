@@ -712,6 +712,20 @@
   .session-stat-value.stat-recalled{ color:var(--brand-primary-deep); }
   .session-stat-value.stat-forgotten{ color:var(--danger-deep); }
   .session-stat-value.stat-accuracy{ color:var(--ink); }
+  .session-stat-value.stat-streak{ color:#EA580C; }
+  .streak-bump-banner{
+    display:inline-block;
+    font-family:'JetBrains Mono', monospace;
+    font-weight:700;
+    font-size:0.9rem;
+    color:#EA580C;
+    background:rgba(251,146,60,0.14);
+    border:1.5px solid rgba(251,146,60,0.35);
+    border-radius:999px;
+    padding:8px 18px;
+    margin-bottom:16px;
+    animation: streakBump 0.6s ease;
+  }
   .session-stat-label{
     font-family:'JetBrains Mono', monospace;
     font-size:0.68rem;
@@ -1514,6 +1528,25 @@
   }
 
   /* ---------- AVATAR EDITOR (in-app, post-login) ---------- */
+  .streak-indicator{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    font-family:'JetBrains Mono', monospace;
+    font-weight:700;
+    font-size:0.85rem;
+    color:var(--ink);
+    background:rgba(251,146,60,0.14);
+    border:1.5px solid rgba(251,146,60,0.35);
+    border-radius:999px;
+    padding:5px 12px 5px 10px;
+  }
+  .streak-indicator.streak-bump{ animation: streakBump 0.6s ease; }
+  @keyframes streakBump{
+    0%{ transform:scale(1); }
+    40%{ transform:scale(1.35); }
+    100%{ transform:scale(1); }
+  }
   .avatar-edit-trigger{
     display:inline-flex;
     align-items:center;
@@ -1971,6 +2004,7 @@
     <div class="tagline">particles, words, and how they fit together</div>
   </div>
   <div style="display:flex; gap:10px; align-items:center;">
+    <span class="streak-indicator" id="streak-indicator" style="display:none;"></span>
     <button class="avatar-edit-trigger" id="avatar-edit-trigger" style="display:none;" onclick="openAvatarEditor()" title="Customize your avatar" aria-label="Customize your avatar"></button>
     <span class="deck-count" id="mode-indicator"></span>
     <button class="teacher-link" id="teacher-tools-btn" style="display:none;" onclick="openTeacherPanel()">Teacher tools</button>
@@ -2721,6 +2755,141 @@ function saveStudentProgress(){
 function blankCardState(){
   return { status:'new', repetitions:0, ease:2.5, interval:0, dueDate: null };
 }
+
+/* ---------------- STREAKS ----------------
+   Tracks, per student, how many consecutive CALENDAR DAYS (in the student's
+   own local timezone — just whatever the browser's Date object naturally
+   uses) they've completed at least one full flashcard session on. A day is
+   "kept" by finishing a session (however many cards it had — a 1-card
+   practice session counts exactly the same as a 20-card one), not by rating
+   a single card in isolation; the bar is "did they actually study today,"
+   not "did they touch anything at all."
+
+   Stored separately from the per-card SM-2 progress store, since a streak
+   is a per-student-per-day fact, not something that belongs nested under any
+   particular card. Synced the same permissive way progress is — a student's
+   own browser can write their own streak record, mirroring the existing
+   trust model in this app (no separate auth layer; whoever is in a given
+   session writes their own data). */
+const STREAK_DOC_PATH = { collection: "wordbench", doc: "studentStreaks" };
+const STREAK_LOCAL_FALLBACK_KEY = 'wordbench_student_streaks_local_fallback_v1';
+
+let studentStreaks = {}; // { [studentId]: { current, longest, lastCompletedDate } }
+let unsubscribeStreakSnapshot = null;
+
+function connectStreaksToCloud(){
+  if(!firebaseReady){
+    studentStreaks = loadStreaksLocalFallback();
+    renderStreakIndicator();
+    return;
+  }
+  const ref = db.collection(STREAK_DOC_PATH.collection).doc(STREAK_DOC_PATH.doc);
+  unsubscribeStreakSnapshot = ref.onSnapshot((snap)=>{
+    if(snap.exists){
+      studentStreaks = snap.data().byStudent || {};
+    } else {
+      ref.set({ byStudent: {} }).catch(()=>{});
+      studentStreaks = {};
+    }
+    renderStreakIndicator();
+  }, (err)=>{
+    console.error('Streak sync error:', err);
+    studentStreaks = loadStreaksLocalFallback();
+    renderStreakIndicator();
+  });
+}
+
+function loadStreaksLocalFallback(){
+  try{
+    const raw = localStorage.getItem(STREAK_LOCAL_FALLBACK_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){ /* ignore corrupt storage */ }
+  return {};
+}
+
+function saveStudentStreaks(){
+  localStorage.setItem(STREAK_LOCAL_FALLBACK_KEY, JSON.stringify(studentStreaks));
+  if(firebaseReady && db){
+    const ref = db.collection(STREAK_DOC_PATH.collection).doc(STREAK_DOC_PATH.doc);
+    ref.set({ byStudent: studentStreaks }).catch((err)=>{
+      console.error('Failed to save streak to cloud:', err);
+    });
+  }
+}
+
+// Local calendar day as YYYY-MM-DD, using the browser's own local time — this
+// is deliberately NOT UTC, so "a day" matches whatever day it actually is
+// for the student sitting at that device, wherever they are.
+function localDateString(date){
+  const d = date || new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${year}-${month}-${day}`;
+}
+
+function daysBetweenLocalDateStrings(earlier, later){
+  const a = new Date(earlier + 'T00:00:00');
+  const b = new Date(later + 'T00:00:00');
+  return Math.round((b - a) / 86400000);
+}
+
+// Call this once per completed session (see renderSrsSessionDone). Returns
+// { current, longest, increased } so the caller can show a bigger moment
+// specifically when the streak actually went up today (not on every session
+// — only the first completed session of a new day should bump it).
+function recordStreakCompletion(studentId){
+  if(!studentId) return null;
+  const today = localDateString();
+  const existing = studentStreaks[studentId] || { current:0, longest:0, lastCompletedDate:null };
+
+  if(existing.lastCompletedDate === today){
+    // Already completed a session today — same streak, no change, no re-celebration.
+    return { current: existing.current, longest: existing.longest, increased:false };
+  }
+
+  const gap = existing.lastCompletedDate ? daysBetweenLocalDateStrings(existing.lastCompletedDate, today) : null;
+  const newCurrent = (gap === 1) ? existing.current + 1 : 1; // consecutive day -> extend; any gap or first-ever day -> restart at 1
+  const newLongest = Math.max(existing.longest, newCurrent);
+
+  studentStreaks[studentId] = { current: newCurrent, longest: newLongest, lastCompletedDate: today };
+  saveStudentStreaks();
+  return { current: newCurrent, longest: newLongest, increased:true };
+}
+
+function currentStreakFor(studentId){
+  const entry = studentStreaks[studentId];
+  if(!entry) return { current:0, longest:0 };
+  // If the student's last completed day isn't today or yesterday, the streak
+  // has actually lapsed (a day was missed) even though we haven't written
+  // that yet — this is a read-time projection, same pattern as mastery decay,
+  // so the displayed number is always honest even before their next session.
+  const today = localDateString();
+  if(entry.lastCompletedDate === today) return { current: entry.current, longest: entry.longest };
+  const gap = daysBetweenLocalDateStrings(entry.lastCompletedDate, today);
+  if(gap > 1) return { current:0, longest: entry.longest };
+  return { current: entry.current, longest: entry.longest }; // gap === 1: still "kept" until the day actually ends
+}
+
+// Renders the small persistent flame+number indicator in the header. Only
+// shown for students (mirrors the avatar-edit trigger's visibility rule) —
+// teachers don't have a personal streak to display.
+function renderStreakIndicator(){
+  const el = document.getElementById('streak-indicator');
+  if(!el) return;
+  if(isTeacherMode() || !currentStudent){
+    el.style.display = 'none';
+    return;
+  }
+  const streak = currentStreakFor(currentStudent.id);
+  el.style.display = 'inline-flex';
+  el.innerHTML = `🔥 <span>${streak.current}</span>`;
+  el.title = streak.current > 0
+    ? `${streak.current}-day streak — keep it going!`
+    : `Complete a session today to start a streak`;
+}
+
+
 
 // A mastered card that's gone unreviewed for a long stretch past its due date
 // almost certainly isn't still "mastered" in reality — per the Ebbinghaus
@@ -3895,11 +4064,24 @@ function renderSrsSessionDone(section){
   const recalledWell = stats.good + stats.easy;
   const accuracy = stats.reviewed > 0 ? Math.round((recalledWell / stats.reviewed) * 100) : 0;
 
+  // Completing this session — of any size, practice mode included — keeps
+  // today's streak, per the confirmed design ("finishing a session counts,
+  // however many cards it had"). Only the FIRST completed session of a new
+  // day actually bumps the number; repeating sessions later the same day
+  // correctly doesn't re-celebrate since streakResult.increased will be false.
+  const streakResult = currentStudent ? recordStreakCompletion(currentStudent.id) : null;
+  const streakCardHTML = streakResult ? `
+        <div class="session-stat-card">
+          <div class="session-stat-value stat-streak">🔥 ${streakResult.current}</div>
+          <div class="session-stat-label">day streak</div>
+        </div>` : '';
+
   area.innerHTML = `
     <div class="session-done-wrap">
       <canvas id="confetti-canvas"></canvas>
       <div class="session-done-headline">${heading}</div>
       <div class="session-done-subline">${subline}</div>
+      ${streakResult && streakResult.increased ? `<div class="streak-bump-banner">🔥 Streak day ${streakResult.current}! Keep it up.</div>` : ''}
       ${smallPoolNoteHTML}
       <div class="session-stat-grid">
         <div class="session-stat-card">
@@ -3918,11 +4100,21 @@ function renderSrsSessionDone(section){
           <div class="session-stat-value stat-forgotten">${stats.again}</div>
           <div class="session-stat-label">forgotten</div>
         </div>
+        ${streakCardHTML}
       </div>
       <div class="modal-actions" style="justify-content:center; margin-top:24px;">
         <button class="ctrl-btn primary" onclick="restartSrsSession('${section}')">Keep reviewing</button>
       </div>
     </div>`;
+
+  renderStreakIndicator();
+  if(streakResult && streakResult.increased){
+    const indicator = document.getElementById('streak-indicator');
+    if(indicator){
+      indicator.classList.add('streak-bump');
+      setTimeout(()=> indicator.classList.remove('streak-bump'), 650);
+    }
+  }
 
   playSound(stats.newlyMastered > 0 ? 'mastered' : 'correct');
   launchConfetti(document.getElementById('confetti-canvas'));
@@ -5763,6 +5955,7 @@ function finishEnteringApp(){
   resetStudyState('vc');
   setMode('pv', state.pv.mode);
   setMode('vc', state.vc.mode);
+  renderStreakIndicator();
 }
 
 /* ---------------- SOUND EFFECTS ----------------
@@ -5879,6 +6072,7 @@ connectToCloud(function(){
 connectRosterToCloud();
 connectCustomQuizzesToCloud();
 connectProgressToCloud();
+connectStreaksToCloud();
 
 // Restore a previous login/mode if it hasn't expired yet, so refreshing the page
 // doesn't force the person to choose student/teacher and re-enter the password again.
