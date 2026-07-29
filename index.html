@@ -768,7 +768,7 @@
     align-items:center;
     gap:16px;
     min-width:260px;
-    max-width:460px;
+    max-width:560px;
     flex:1 1 260px;
     box-shadow: 0 4px 14px rgba(26,22,37,0.06);
   }
@@ -813,7 +813,8 @@
     font-family:'JetBrains Mono', monospace;
     font-size:0.7rem;
     color:var(--ink-soft);
-    flex-wrap:wrap;
+    flex-wrap:nowrap;
+    overflow-x:auto;
   }
 
   .headword{
@@ -1145,17 +1146,24 @@
     max-width:420px;
     width:100%;
   }
+  .gate-btn-col{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
   @media (min-width:1500px){
-    .gate-modal{ max-width:520px; }
+    .gate-modal{ max-width:520px; padding:42px; }
     .gate-modal .brand{ font-size:2.1rem; }
-    .gate-modal .gate-hero-line{ font-size:1.3rem; }
+    .gate-modal .gate-hero-line{ font-size:1.3rem; margin-bottom:28px; }
+    .gate-btn-col{ gap:18px; }
     .gate-role-btn{ padding:22px 24px; font-size:1.15rem; }
     .gate-role-sub{ font-size:0.8rem; }
   }
   @media (min-width:1800px){
-    .gate-modal{ max-width:600px; }
+    .gate-modal{ max-width:600px; padding:52px; }
     .gate-modal .brand{ font-size:2.4rem; }
-    .gate-modal .gate-hero-line{ font-size:1.45rem; }
+    .gate-modal .gate-hero-line{ font-size:1.45rem; margin-bottom:34px; }
+    .gate-btn-col{ gap:22px; }
     .gate-role-btn{ padding:26px 28px; font-size:1.3rem; }
     .gate-role-sub{ font-size:0.88rem; }
   }
@@ -1964,7 +1972,7 @@
   <div class="modal gate-modal" style="text-align:center;">
     <div class="brand" style="margin-bottom:6px;">wordbench<span class="dot">.</span></div>
     <div class="gate-hero-line">Flashcards, but make them actually fun.</div>
-    <div style="display:flex; flex-direction:column; gap:14px;">
+    <div class="gate-btn-col">
       <button class="gate-role-btn gate-role-student" onclick="openStudentLobby()">
         I'm here to study
         <span class="gate-role-sub">let's get those cards mastered</span>
