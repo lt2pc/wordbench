@@ -251,16 +251,6 @@
   body.compact-mode .deck-progress-info .deck-progress-detail{ font-size:0.72rem; }
   body.compact-mode .deck-progress-breakdown{ margin-top:4px; gap:6px; }
   body.compact-mode .mode-row{ margin-bottom:12px; }
-  body.compact-mode .card-stage{ min-height:clamp(340px, 28vw, 560px); }
-  body.compact-mode .flip-card{
-    height:clamp(340px, 28vw, 560px);
-    width:clamp(520px, 40vw, 920px);
-  }
-  body.compact-mode .face{ padding:28px 32px; gap:4px; }
-  body.compact-mode .combo{ font-size:clamp(2.1rem, 2.4vw, 3.4rem); }
-  body.compact-mode .card-stage-card-col{ gap:12px; }
-  body.compact-mode .back-meaning{ font-size:clamp(1.7rem, 2vw, 2.6rem); }
-  body.compact-mode .back-example{ font-size:clamp(1.05rem, 1.1vw, 1.3rem); }
   body.compact-mode .srs-rate-col{ width:180px; }
   body.compact-mode .srs-rate-col-placeholder{ width:180px; }
   body.compact-mode .srs-rate-btn{ padding:16px 12px; font-size:1rem; }
@@ -509,7 +499,7 @@
     align-items:center;
     justify-content:center;
     gap:22px;
-    min-height:clamp(320px, 28vw, 420px);
+    min-height:clamp(340px, 28vw, 560px);
   }
   .card-stage-card-col{
     display:flex;
@@ -518,8 +508,8 @@
     gap:14px;
   }
   .flip-card{
-    width:clamp(480px, 40vw, 680px);
-    height:clamp(320px, 28vw, 420px);
+    width:clamp(520px, 40vw, 920px);
+    height:clamp(340px, 28vw, 560px);
     perspective:1400px;
     cursor:pointer;
     transition: transform 0.25s ease;
@@ -541,10 +531,10 @@
     flex-direction:column;
     align-items:center;
     justify-content:center;
-    padding:26px 26px;
+    padding:28px 32px;
     text-align:center;
     box-shadow:var(--shadow);
-    gap:2px;
+    gap:4px;
   }
   #pv-panel .face.front{ background:var(--paper); border-color: rgba(236,72,153,0.35); }
   #vc-panel .face.front{ background:var(--paper); border-color: rgba(190,24,93,0.35); }
@@ -575,7 +565,7 @@
     gap:12px;
     font-family:'Fraunces', serif;
     font-weight:700;
-    font-size:clamp(2rem, 2.4vw, 2.6rem);
+    font-size:clamp(2.1rem, 2.4vw, 3.4rem);
   }
   .combo .verb{ color:var(--ink); }
   .combo .join{
@@ -902,19 +892,19 @@
   }
   .back-meaning{
     font-family:'Fraunces', serif;
-    font-size:clamp(1.5rem, 1.9vw, 1.95rem);
+    font-size:clamp(1.7rem, 2vw, 2.6rem);
     font-weight:700;
     line-height:1.25;
     margin-bottom:20px;
     text-shadow: 0 1px 3px rgba(0,0,0,0.2);
   }
   .back-example{
-    font-size:0.85rem;
+    font-size:clamp(1.05rem, 1.1vw, 1.3rem);
     opacity:0.85;
     font-style:italic;
     line-height:1.55;
     margin-top:18px;
-    max-width:340px;
+    max-width:460px;
     text-shadow: 0 1px 3px rgba(0,0,0,0.2);
   }
 
