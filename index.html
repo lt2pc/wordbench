@@ -4916,7 +4916,7 @@ function renderDeckList(section){
   renderPublishedSummary();
 
   if(deckIds.length === 0){
-    list.innerHTML = `<div class="empty-state" style="padding:30px 20px;"><div class="big-label">There are no decks here.</div>Create a new deck above to get started.</div>`;
+    list.innerHTML = `<div class="empty-state" style="padding:30px 20px;"><div class="big-label">Nothing here yet — that's alright.</div>Every deck starts empty. Create your first one above whenever you're ready.</div>`;
     return;
   }
 
@@ -5288,7 +5288,7 @@ function addWordFromForm(){
   const targetDeckId = document.getElementById('add-target-deck').value;
 
   if(!targetDeckId || !deckStore[section].decks[targetDeckId]){
-    showStatus('add-status', 'There are no decks here. Create a deck first under "My decks".', false);
+    showStatus('add-status', 'No decks to add to yet — create one under "My decks" first.', false);
     return;
   }
 
@@ -5527,7 +5527,7 @@ function confirmDocxImport(){
   const targetDeckId = document.getElementById('import-target-deck').value;
 
   if(!targetDeckId || !deckStore[section].decks[targetDeckId]){
-    showStatus('import-status', 'There are no decks here. Create a deck first under "My decks".', false);
+    showStatus('import-status', 'No decks to add to yet — create one under "My decks" first.', false);
     return;
   }
   if(!docxParsedRows){
@@ -5631,7 +5631,7 @@ function confirmCsvImport(){
   if(!file) return;
 
   if(!targetDeckId || !deckStore[section].decks[targetDeckId]){
-    showStatus('import-status', 'There are no decks here. Create a deck first under "My decks".', false);
+    showStatus('import-status', 'No decks to add to yet — create one under "My decks" first.', false);
     return;
   }
 
@@ -5701,7 +5701,7 @@ function confirmJsonImport(){
   if(!file) return;
 
   if(!targetDeckId || !deckStore[section].decks[targetDeckId]){
-    showStatus('import-status', 'There are no decks here. Create a deck first under "My decks".', false);
+    showStatus('import-status', 'No decks to add to yet — create one under "My decks" first.', false);
     return;
   }
 
